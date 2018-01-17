@@ -16,17 +16,18 @@
   * Create your own at http://cspisawesome.com
   -->
   <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: 'unsafe-inline' https://ssl.gstatic.com; style-src 'self' 'unsafe-inline'; media-src *" /> -->
-  <link rel="stylesheet" href="./js/Libs/onsenui/css/onsenui.css"/><!--On final deploy change all to minified versions-->
-  <link rel="stylesheet" href="./js/Libs/onsenui/css/onsen-css-components.css"/>
   <script src="./js/Libs/angular.js"></script>
-  <script src="./js/Libs/bower_components/ng-cordova-bluetoothle/ng-cordova-bluetoothle.js"></script>
+
+  <script src="./js/Libs/bower_components/ng-cordova-bluetoothle/ng-cordova-bluetoothle.js"></script><!--On final deploy change all to minified versions-->
   <script src="./js/Libs/promise.js"></script>
   <script src="./js/Libs/onsenui/js/onsenui.js"></script>
   <script src="./js/Libs/onsenui/js/angular-onsenui.js"></script>
   <script src="./js/Libs/angular-route/angular-route.js"></script>
+  <script src="./js/Libs/jquery-3.2.1.js"></script>
+  <link rel="stylesheet" type="text/css" href="./js/Libs/onsenui/css/onsenui.css"/>
+  <link rel="stylesheet" type="text/css" href="./js/Libs/onsenui/css/onsen-css-components.css"/>
   <link rel="stylesheet" type="text/css" href="css/index.css" /> <!--Remove-->
   <script type="text/javascript" src="cordova.js"></script>
-  <script type="text/javascript" src="js/controllers/router.js"></script>
 </head>
 
 <body>
@@ -38,9 +39,8 @@
       <ons-list-item modifier="longdivider" tappable ng-repeat="device in devices" onclick="connect(device)">{{ device.name }}</ons-list-item>
     </ons-list>
 
-    <ons-gesture-detector>
-        <ons-button id="btnTag" ripple modifier="large" onclick="startScan()">Start Scan</ons-button>
-    </ons-gesture-detector>
+        <ons-button id="startScanBtn" ripple modifier="large" ng-click="startScan()" >Start Scan</ons-button>
+        <script type="text/javascript" src="js/controllers/router.js"></script>
 
     <ons-tabbar>
       <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />

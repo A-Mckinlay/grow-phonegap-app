@@ -1,4 +1,4 @@
-var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE']);
+var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen']);
 
 // configure our routes
 growApp.config(function($routeProvider) {
@@ -18,9 +18,20 @@ document.addEventListener("deviceready", function() { //manually bootstrap angul
 
 growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
 
+  $scope.bleEnabled = false;
+
+  document.addEventListener('tap', function(){
+    $scope.startScan();
+  });
+
+  $(document).on("tap", function () {
+    alert("the event: " + $(this).text());
+    var clickedBtnID = $(this).attr('id'); // or var clickedBtnID = this.id
+    alert('you clicked on button #' + clickedBtnID);
+});
+
   $scope.devices = {};
   var scanBtn = angular.element(document.getElementById('scanBtn'));
-
 
   $scope.bleInit = function(){
     var paramsInit = {
@@ -29,14 +40,13 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
 
     $cordovaBluetoothLE.initialize(paramsInit).then(null,
     function(obj) {
+      $scope.bleEnabled = false;
       //$log.log("Initialize Error : " + JSON.stringify(obj)); //Should only happen when testing in browser
-      if(!scanBtn.hasClass('disabled')) scanBtn.addClass('disabled');
     },
     function(obj) {
       //$log.log("Initialize Success : " + JSON.stringify(obj));
       $scope.bleEnabled = true;
       //$log.log($scope.bleEnabled);
-      if(!scanBtn.hasClass('disabled')) scanBtn.removeClass('disabled');
     });
   }
 
@@ -81,12 +91,4 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
     obj.services = {};
     $scope.devices[obj.address] = obj;
   }
-
-  document.addEventListener('tap', function(event) {
-    $log.log(event);
-    if (event.target.matches('#detect-area')) {
-      $log.log('TAP is detected.');
-    }
-  });
-
 });
