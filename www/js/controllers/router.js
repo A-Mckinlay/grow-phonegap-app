@@ -24,14 +24,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
     $scope.startScan();
   });
 
-  $(document).on("tap", function () {
-    alert("the event: " + $(this).text());
-    var clickedBtnID = $(this).attr('id'); // or var clickedBtnID = this.id
-    alert('you clicked on button #' + clickedBtnID);
-});
-
   $scope.devices = {};
-  var scanBtn = angular.element(document.getElementById('scanBtn'));
 
   $scope.bleInit = function(){
     var paramsInit = {
@@ -57,7 +50,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
       //scanTimeout: 15000,
     };
 
-    $log.log(window.cordova);
     if (window.cordova) {
       params.scanMode = bluetoothle.SCAN_MODE_LOW_POWER;
       params.matchMode = bluetoothle.MATCH_MODE_STICKY;
@@ -79,8 +71,50 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
 
   }
 
+  $scope.stopScan = function() {
+    $log.log("Stop Scan");
+
+    $cordovaBluetoothLE.stopScan().then(function(obj) {
+      $log.log("Stop Scan Success : " + JSON.stringify(obj));
+    }, function(obj) {
+      $log.log("Stop Scan Error : " + JSON.stringify(obj));
+    });
+  };
+
+  $scope.close = function(address) {
+    var params = {address:address};
+
+    $log.log("Close : " + JSON.stringify(params));
+
+    $cordovaBluetoothLE.close(params).then(function(obj) {
+     $log.log("Close Success : " + JSON.stringify(obj));
+    }, function(obj) {
+      $log.log("Close Error : " + JSON.stringify(obj));
+    });
+
+    var device = $rootScope.devices[address];
+    device.services = {};
+  };
+
+  $scope.connect = function(address) {
+    var params = {address:address, timeout: 10000};
+
+    $log.log("Connect : " + JSON.stringify(params));
+
+    $cordovaBluetoothLE.connect(params).then(null, function(obj) {
+      $log.log("Connect Error : " + JSON.stringify(obj));
+      $scope.close(address); //Best practice is to close on connection error
+    }, function(obj) {
+      $log.log("Connect Success : " + JSON.stringify(obj));
+    });
+  };
+
   function addDevice(obj) {
     if (obj.status == "scanStarted") {
+      return;
+    }
+
+    if(obj.name == ""){
       return;
     }
 
@@ -90,5 +124,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
 
     obj.services = {};
     $scope.devices[obj.address] = obj;
+    $scope.stopScan();
+    $scope.connect(obj.address);
   }
 });
