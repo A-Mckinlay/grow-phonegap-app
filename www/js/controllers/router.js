@@ -1,4 +1,4 @@
-var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen']);
+var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen', 'ngCordova']);
 
 // configure our routes
 growApp.config(function($routeProvider) {
@@ -16,7 +16,9 @@ document.addEventListener("deviceready", function() { //manually bootstrap angul
   angular.bootstrap(domElement, ["growApp"]);
 }, false);
 
-growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
+growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLite, $log){
+
+  var db = $cordovaSQLite.openDB({ name: "my.db", location: 'default' });
 
   $scope.bleEnabled = false;
 
@@ -92,7 +94,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $log){
       $log.log("Close Error : " + JSON.stringify(obj));
     });
 
-    var device = $rootScope.devices[address];
+    var device = $scope.devices[address];
     device.services = {};
   };
 
