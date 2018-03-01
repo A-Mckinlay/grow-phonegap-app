@@ -29,7 +29,7 @@ document.addEventListener("deviceready", function() { //manually bootstrap angul
   angular.bootstrap(domElement, ["growApp"]);
 }, false);
 
-growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLite, $log){
+growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLite, $log, $q){
 
   var db = $cordovaSQLite.openDB({ name: "my.db", location: 'default' });
   $scope.bleEnabled = false;
@@ -122,11 +122,15 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       $scope.close(address); //Best practice is to close on connection error
     }, function(obj) {
       $log.log("Connect Success : " + JSON.stringify(obj));
-      $scope.discover(address);
+      $scope.discover(address).then(
+        function(address){ $scope.getDeviceTime(address) },
+        function(err){ $log.log(err) }
+      );
     });
   };
 
   $scope.discover = function(address) {
+    var q = $q.defer()
     var params = {
       address: address,
       timeout: 50000 //10000 DEFAULT
@@ -166,28 +170,25 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
           }
         }
       }
-      $scope.getDeviceTime(address).then(function(deviceTime){
-        $log.log("deviceTime: " + deviceTime);
-      }).catch(function(error){
-        $log.log("an error occured while getting device time: ", error)
-      });
+      q.resolve(address);
     }, function(obj) {
       $log.log("Discover Error : " + JSON.stringify(obj));
+      q.reject("Discover Eror: " + JSON.stringify(obj));
     });
+    return q.promise
   };
 
   $scope.getDeviceTime = function(address){
-    return new Promise(function(resolve, reject){
-      var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
-      var timeCharacteristic = "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B";
-      var bytes = $scope.read(address, clockService, timeCharacteristic);
-      deviceTime = new Int32Array(bytes).join('');
-      if(deviceTime != undefined){
-        resolve(deviceTime);
-      }else{
-        reject(bytes);
-      }
-    });
+    var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
+    var timeCharacteristic = "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B";
+    var bytes = $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
+      function(obj){
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        var deviceTime = new Int32Array(bytes).join('');
+        $log.log("Time Since Epoch of Device: " + deviceTime);
+      },
+      function(err){ $log.log("Failed to read device time: " + JSON.stringify(err)) }
+    );
   }
 
 
@@ -247,11 +248,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       if (!obj.value) {
         return;
       }
-      // var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-      // $scope.deviceTime = new Int32Array(bytes).join('');
-      // $log.log("LittleEndianU32: " + $scope.deviceTime);
-      // $log.log("ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
-      // $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
       return $cordovaBluetoothLE.encodedStringToBytes(obj.value);
       // var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
       // $scope.deviceTime = new Int32Array(bytes).join('');
