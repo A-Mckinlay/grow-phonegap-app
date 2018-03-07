@@ -179,7 +179,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   };
 
   $scope.gatherTransferSetupParameters = function(address){
-    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionID(address), $scope.getSessionMeasurmentPeriod(address), $scope.getSessionStartIndex(address)]).then(
+    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionID(address), $scope.getSessionMeasurmentPeriod(address), $scope.getSessionStartIndex(address), $scope.getLastEntryIndex(address), $scope.getNbEntries(address)]).then(
       function (params) {
         $log.log(params);
       },
@@ -189,12 +189,48 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     );
   }
 
+  $scope.getNbEntries = function (address) {
+    var q = $q.defer();
+
+    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
+    var nbEntriesCharacteristic = "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B";
+    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: nbEntriesCharacteristic }).then(
+      function (obj) {
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        q.resolve(new Int16Array(bytes).join(''));
+      },
+      function (err) {
+        $log.log("Failed to read number of entries characteristic: " + JSON.stringify(err))
+        q.reject(err);
+      }
+    );
+    return q.promise;
+  }
+
+  $scope.getLastEntryIndex = function(address) {
+    var q = $q.defer();
+
+    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
+    var lastEntryIndexCharacteristic = "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B";
+    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: lastEntryIndexCharacteristic }).then(
+      function (obj) {
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        q.resolve(new Int32Array(bytes).join(''));
+      },
+      function (err) {
+        $log.log("Failed to read last entry index: " + JSON.stringify(err))
+        q.reject(err);
+      }
+    );
+    return q.promise;
+  }
+
   $scope.getSessionStartIndex = function (address) {
     var q = $q.defer();
 
     var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
     var sessionStartIndexCharacteristic = "39E1FC05-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionID = $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionStartIndexCharacteristic }).then(
+    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionStartIndexCharacteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
         q.resolve(new Int32Array(bytes).join(''));
@@ -212,7 +248,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
     var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
     var sessionPeriodCharacteristic = "39E1FC06-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionID = $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionPeriodCharacteristic }).then(
+    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionPeriodCharacteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
         q.resolve(new Int16Array(bytes).join(''));
@@ -230,7 +266,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
     var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
     var timeCharacteristic = "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B";
-    var deviceTime = $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
+    $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
         q.resolve(new Int32Array(bytes).join(''));
@@ -248,7 +284,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
     var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
     var sessionIDCharacteristic = "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionID = $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionIDCharacteristic }).then(
+    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionIDCharacteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
         q.resolve(new Int16Array(bytes).join(''));
