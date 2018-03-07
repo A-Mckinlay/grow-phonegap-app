@@ -123,7 +123,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     }, function(obj) {
       $log.log("Connect Success : " + JSON.stringify(obj));
       $scope.discover(address).then(
-        function(address){ $scope.getDeviceTime(address) },
+        function(address){ $scope.gatherTransferSetupParameters(address) },
         function(err){ $log.log(err) }
       );
     });
@@ -178,21 +178,62 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     return q.promise
   };
 
+  $scope.gatherTransferSetupParameters = function(address){
+   $scope.getDeviceTime(address).then(
+    function(deviceTime){
+      $scope.deviceTime = deviceTime;
+      $scope.getCurrentSessionID(address).then(
+        function(sessionID){
+          $log.log("TranferParams: " + $scope.deviceTime + "\n" + sessionID);
+        },
+        function(){
+          $log.log("err");
+        }
+      );
+    },
+    function(){
+      $log.log("err");
+    });
+  }
+
   $scope.getDeviceTime = function(address){
+    var q = $q.defer();
+
     var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
     var timeCharacteristic = "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B";
-    var bytes = $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
-      function(obj){
+    var deviceTime = $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
+      function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        var deviceTime = new Int32Array(bytes).join('');
-        $log.log("Time Since Epoch of Device: " + deviceTime);
+        q.resolve(new Int32Array(bytes).join(''));
       },
-      function(err){ $log.log("Failed to read device time: " + JSON.stringify(err)) }
+      function (err) { 
+        $log.log("Failed to read device time: " + JSON.stringify(err)); 
+        q.reject(err); 
+      }
     );
+    return q.promise;
+  }
+
+  $scope.getCurrentSessionID = function (address){
+    var q = $q.defer();
+
+    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
+    var sessionIDCharacteristic = "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B";
+    var sessionID = $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionIDCharacteristic }).then(
+      function (obj) {
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        q.resolve(new Int16Array(bytes).join(''));
+      },
+      function (err) { 
+        $log.log("Failed to read current session ID: " + JSON.stringify(err)) 
+        q.reject(err); 
+      }
+    );
+    return q.promise;
   }
 
 
-  $scope.calculateStartupTime = function(deviceTime){
+  function calculateStartupTime(deviceTime){
     var currentTime = new Date().getTime();
     return (currentTime - deviceTime);
   }
