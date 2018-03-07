@@ -179,21 +179,14 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   };
 
   $scope.gatherTransferSetupParameters = function(address){
-   $scope.getDeviceTime(address).then(
-    function(deviceTime){
-      $scope.deviceTime = deviceTime;
-      $scope.getCurrentSessionID(address).then(
-        function(sessionID){
-          $log.log("TranferParams: " + $scope.deviceTime + "\n" + sessionID);
-        },
-        function(){
-          $log.log("err");
-        }
-      );
-    },
-    function(){
-      $log.log("err");
-    });
+    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionID(address)]).then(
+      function (params) {
+        $log.log("TranferParams: " + calculateStartupTime(params[0]) + "\n" + params[1]);
+      },
+      function(){
+        $log.log("err");
+      }
+    );
   }
 
   $scope.getDeviceTime = function(address){
