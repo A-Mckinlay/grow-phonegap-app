@@ -179,7 +179,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   };
 
   $scope.gatherTransferSetupParameters = function(address){
-    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionID(address), $scope.getSessionMeasurmentPeriod(address)]).then(
+    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionID(address), $scope.getSessionMeasurmentPeriod(address), $scope.getSessionStartIndex(address)]).then(
       function (params) {
         $log.log(params);
       },
@@ -187,6 +187,24 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
         $log.log("err");
       }
     );
+  }
+
+  $scope.getSessionStartIndex = function (address) {
+    var q = $q.defer();
+
+    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
+    var sessionStartIndexCharacteristic = "39E1FC05-84A8-11E2-AFBA-0002A5D5C51B";
+    var sessionID = $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionStartIndexCharacteristic }).then(
+      function (obj) {
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        q.resolve(new Int32Array(bytes).join(''));
+      },
+      function (err) {
+        $log.log("Failed to read current session period: " + JSON.stringify(err))
+        q.reject(err);
+      }
+    );
+    return q.promise;
   }
 
   $scope.getSessionMeasurmentPeriod = function(address){
