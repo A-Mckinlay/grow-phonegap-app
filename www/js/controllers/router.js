@@ -341,6 +341,10 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       return;
     }
 
+    if (obj.address == "4F:FB:9C:62:58:06") {
+      return;
+    }
+
     if(obj.name == null){
       return;
     }
@@ -355,20 +359,28 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   }
 
   $scope.writeTransferStartIndex = function (address, firstEntryIndex) {
+    // var buffer = new ArrayBuffer(4);
+    // var uInt32View = new uInt32View(buffer);
+    var binStr = firstEntryIndex.toString(2);
+    $log.log("binstr: " + binStr);
+    // for (var i = 0; i < binStr; i++) {
+    //   uInt32View[i] = binstr[i];
+    // }
+
     var params = {
       address: address,
       service: "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B",
       characteristic: "39E1FC03-84A8-11E2-AFBA-0002A5D5C51B",
-      value: parseInt(firstEntryIndex),
+      value: $cordovaBluetoothLE.bytesToEncodedString($cordovaBluetoothLE.stringToBytes(binStr)),
       timeout: 5000
     };
 
-    $log.log("WriteQ : " + JSON.stringify(params));
+    $log.log("Write : " + JSON.stringify(params));
 
-    $cordovaBluetoothLE.writeQ(params).then(function (obj) {
-      $log.log("WriteQ Success : " + JSON.stringify(obj));
+    $cordovaBluetoothLE.write(params).then(function (obj) {
+      $log.log("Write Success : " + JSON.stringify(obj));
     }, function (obj) {
-      $log.log("WriteQ Error : " + JSON.stringify(obj));
+      $log.log("Write Error : " + JSON.stringify(obj));
     });
   };
 
