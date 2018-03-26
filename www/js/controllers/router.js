@@ -305,7 +305,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     return q.promise;
   }
 
-
   function calculateStartupTime(deviceTime){
     var currentTime = new Date().getTime();
     return (currentTime - deviceTime);
@@ -359,19 +358,12 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   }
 
   $scope.writeTransferStartIndex = function (address, firstEntryIndex) {
-    // var buffer = new ArrayBuffer(4);
-    // var uInt32View = new uInt32View(buffer);
-    var binStr = firstEntryIndex.toString(2);
-    $log.log("binstr: " + binStr);
-    // for (var i = 0; i < binStr; i++) {
-    //   uInt32View[i] = binstr[i];
-    // }
-
     var params = {
       address: address,
       service: "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B",
       characteristic: "39E1FC03-84A8-11E2-AFBA-0002A5D5C51B",
-      value: $cordovaBluetoothLE.bytesToEncodedString($cordovaBluetoothLE.stringToBytes(binStr)),
+      value: $cordovaBluetoothLE.bytesToEncodedString($cordovaBluetoothLE.stringToBytes(firstEntryIndex.toString())),
+      type: "noResponse",
       timeout: 5000
     };
 
@@ -397,11 +389,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
         return;
       }
       return $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-      // var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-      // $scope.deviceTime = new Int32Array(bytes).join('');
-      // $log.log("LittleEndianU32: " + $scope.deviceTime);
-      // $log.log("ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
-      // $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
       }, function(obj) {
         $log.log("Read Error : " + JSON.stringify(obj));
     });
@@ -423,10 +410,8 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     }, function(obj) {
       $log.log("Subscribe Error : " + JSON.stringify(obj));
     }, function(obj) {
-      //$log.log("Subscribe Success : " + JSON.stringify(obj));
 
       if (obj.status == "subscribedResult") {
-        //$log.log("Subscribed Result");
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
         $log.log("Subscribe Success ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
         $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
