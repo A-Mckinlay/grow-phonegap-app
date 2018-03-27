@@ -189,6 +189,20 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       time: "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B",
       sessionId: "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B",
     }
+
+    $scope.readCharacteristic(address, clockService, historyCharacUUIDs.time, "deviceTime", "U32")
+      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"))
+      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionId, "currentSessionId", "U16"))
+      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionPeriod, "sessionMeasurmentPeriod", "U16"))
+      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionStartIndex, "sessionStartIndex", "U32"))
+      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32"), function(params){
+        $log.log("then chain reuslt: " + JSON.stringify(params));
+      });
+    
+    
+    
+    
+
     $q.all([
         $scope.readCharacteristic(address, clockService, historyCharacUUIDs.time, "deviceTime", "U32"),
         $scope.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"),
@@ -363,7 +377,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       return;
     }
 
-    if (obj.address == "4F:FB:9C:62:58:06") {
+    if (!(_.includes(obj.name), "Flower")){
       return;
     }
 
