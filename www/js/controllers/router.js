@@ -180,7 +180,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
   $scope.gatherTransferSetupParameters = function(address){
     var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
     var historyCharacUUIDs = {
       nbEntries: "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B",
       lastEntryIndex: "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B",
@@ -189,26 +188,9 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       time: "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B",
       sessionId: "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B",
     }
-
-    $scope.readCharacteristic(address, clockService, historyCharacUUIDs.time, "deviceTime", "U32")
-      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"))
-      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionId, "currentSessionId", "U16"))
-      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionPeriod, "sessionMeasurmentPeriod", "U16"))
-      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionStartIndex, "sessionStartIndex", "U32"))
-      .then($scope.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32"), function(params){
-        $log.log("then chain reuslt: " + JSON.stringify(params));
-      });
     
-    
-    
-    
-
     $q.all([
-        $scope.readCharacteristic(address, clockService, historyCharacUUIDs.time, "deviceTime", "U32"),
         $scope.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"),
-        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionId, "currentSessionId", "U16"),
-        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionPeriod, "sessionMeasurmentPeriod", "U16"),
-        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionStartIndex, "sessionStartIndex", "U32"), 
         $scope.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32")
       ]).then(
         function (params) {
@@ -252,96 +234,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     return q.promise;
   }
 
-  $scope.getLastEntryIndex = function(address) {
-    var q = $q.defer();
-
-    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var lastEntryIndexCharacteristic = "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: lastEntryIndexCharacteristic }).then(
-      function (obj) {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({lastEntryIndex: new Int32Array(bytes).join('')});
-      },
-      function (err) {
-        $log.log("Failed to read last entry index: " + JSON.stringify(err))
-        q.reject(err);
-      }
-    );
-    return q.promise;
-  }
-
-  $scope.getSessionStartIndex = function (address) {
-    var q = $q.defer();
-
-    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionStartIndexCharacteristic = "39E1FC05-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionStartIndexCharacteristic }).then(
-      function (obj) {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({sessionStartIndex: new Int32Array(bytes).join('')});
-      },
-      function (err) {
-        $log.log("Failed to read current session period: " + JSON.stringify(err))
-        q.reject(err);
-      }
-    );
-    return q.promise;
-  }
-
-  $scope.getSessionMeasurmentPeriod = function(address){
-    var q = $q.defer();
-
-    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionPeriodCharacteristic = "39E1FC06-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionPeriodCharacteristic }).then(
-      function (obj) {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({ sessionMeasurmentPeriod: new Int16Array(bytes).join('')});
-      },
-      function (err) {
-        $log.log("Failed to read current session period: " + JSON.stringify(err))
-        q.reject(err);
-      }
-    );
-    return q.promise;
-  }
-
-  $scope.getDeviceTime = function(address){
-    var q = $q.defer();
-
-    var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
-    var timeCharacteristic = "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: clockService, characteristic: timeCharacteristic }).then(
-      function (obj) {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({deviceTime: new Int32Array(bytes).join('')});
-      },
-      function (err) { 
-        $log.log("Failed to read device time: " + JSON.stringify(err)); 
-        q.reject(err); 
-      }
-    );
-    return q.promise;
-  }
-
-  $scope.getCurrentSessionId = function (address){
-    var q = $q.defer();
-
-    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var sessionIdCharacteristic = "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: sessionIdCharacteristic }).then(
-      function (obj) {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({currentSessionId: new Int16Array(bytes).join('')});
-      },
-      function (err) { 
-        $log.log("Failed to read current session ID: " + JSON.stringify(err)) 
-        q.reject(err); 
-      }
-    );
-    return q.promise;
-  }
-
   function calculateStartupTime(deviceTime){
     var currentTime = new Date().getTime();
     return (currentTime - deviceTime);
@@ -374,10 +266,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
   function addDevice(obj) {
     if (obj.status == "scanStarted") {
-      return;
-    }
-
-    if (!(_.includes(obj.name), "Flower")){
       return;
     }
 
