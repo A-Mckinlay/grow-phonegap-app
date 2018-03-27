@@ -179,36 +179,59 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   };
 
   $scope.gatherTransferSetupParameters = function(address){
-    $q.all([$scope.getDeviceTime(address), $scope.getCurrentSessionId(address), $scope.getSessionMeasurmentPeriod(address), $scope.getSessionStartIndex(address), $scope.getLastEntryIndex(address), $scope.getNbEntries(address)]).then(
-      function (params) {
-        var characterisitics = {};
-        params.forEach(function(element){
-          elementKey = Object.keys(element)[0];
-          characterisitics[elementKey] = element[elementKey];
-        });
-        $log.log(characterisitics);
-        firstEntryIndex = calculateFirstEntryIndex(characterisitics["lastEntryIndex"], characterisitics["nbEntries"]);
-        $log.log("first entry index: " + firstEntryIndex);
-        $scope.writeTransferStartIndex(address, firstEntryIndex);
-      },
-      function(){
-        $log.log("err");
-      }
-    );
+    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
+    var clockService = "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B";
+    var historyCharacUUIDs = {
+      nbEntries: "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B",
+      lastEntryIndex: "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B",
+      sessionStartIndex: "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B",
+      sessionPeriod: "39E1FC06-84A8-11E2-AFBA-0002A5D5C51B",
+      time: "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B",
+      sessionId: "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B",
+    }
+    $q.all([
+        $scope.readCharacteristic(address, clockService, historyCharacUUIDs.time, "deviceTime", "U32"),
+        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"),
+        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionId, "currentSessionId", "U16"),
+        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionPeriod, "sessionMeasurmentPeriod", "U16"),
+        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.sessionStartIndex, "sessionStartIndex", "U32"), 
+        $scope.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32")
+      ]).then(
+        function (params) {
+          var characterisitics = {};
+          params.forEach(function(element){
+            elementKey = Object.keys(element)[0];
+            characterisitics[elementKey] = element[elementKey];
+          });
+          $log.log(characterisitics);
+          firstEntryIndex = calculateFirstEntryIndex(characterisitics["lastEntryIndex"], characterisitics["nbEntries"]);
+          $log.log("first entry index: " + firstEntryIndex);
+          $scope.writeTransferStartIndex(address, firstEntryIndex);
+        },
+        function(){
+          $log.log("err");
+        }
+      );
   }
 
-  $scope.getNbEntries = function (address) {
+  $scope.readCharacteristic = function (address, service, characteristic, name, returnType) {
     var q = $q.defer();
 
-    var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
-    var nbEntriesCharacteristic = "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B";
-    $cordovaBluetoothLE.read({ address: address, service: historyService, characteristic: nbEntriesCharacteristic }).then(
+    $cordovaBluetoothLE.read({ address: address, service: service, characteristic: characteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        q.resolve({nbEntries: new Int16Array(bytes).join('')});
+        var returnObj = {};
+        switch(returnType){
+          case "U16":
+            returnObj[name] = new Int16Array(bytes).join('')
+            q.resolve(returnObj);
+          case "U32":
+            returnObj[name] = new Int32Array(bytes).join('')
+            q.resolve(returnObj);
+        }  
       },
       function (err) {
-        $log.log("Failed to read number of entries characteristic: " + JSON.stringify(err))
+        $log.log("Failed to read characteristic: " + JSON.stringify(err))
         q.reject(err);
       }
     );
