@@ -1,18 +1,3 @@
-// https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#Solution_2_%E2%80%93_rewrite_the_DOMs_atob()_and_btoa()_using_JavaScript's_TypedArrays_and_UTF-8
-var TextDecoder = window.TextDecoderLite;
-var TextEncoder = window.TextEncoderLite;
-function Base64Encode(str, encoding) {
-  encoding = (typeof encoding !== 'undefined') ? encoding : 'utf-8';
-  var bytes = new (TextEncoder)(encoding).encode(str);
-  return base64js.fromByteArray(bytes);
-}
-
-function Base64Decode(str, encoding) {
-  encoding = (typeof encoding !== 'undefined') ? encoding : 'utf-8';
-  var bytes = base64js.toByteArray(str);
-  return new (TextDecoder)(encoding).decode(bytes);
-}
-
 /**
 * Convert From/To Binary/Decimal/Hexadecimal in JavaScript
 * https://gist.github.com/faisalman
