@@ -1,3 +1,74 @@
+// https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#Solution_2_%E2%80%93_rewrite_the_DOMs_atob()_and_btoa()_using_JavaScript's_TypedArrays_and_UTF-8
+var TextDecoder = window.TextDecoderLite;
+var TextEncoder = window.TextEncoderLite;
+function Base64Encode(str, encoding) {
+  encoding = (typeof encoding !== 'undefined') ? encoding : 'utf-8';
+  var bytes = new (TextEncoder)(encoding).encode(str);
+  return base64js.fromByteArray(bytes);
+}
+
+function Base64Decode(str, encoding) {
+  encoding = (typeof encoding !== 'undefined') ? encoding : 'utf-8';
+  var bytes = base64js.toByteArray(str);
+  return new (TextDecoder)(encoding).decode(bytes);
+}
+
+/**
+* Convert From/To Binary/Decimal/Hexadecimal in JavaScript
+* https://gist.github.com/faisalman
+*
+* Copyright 2012-2015, Faisalman <fyzlman@gmail.com>
+* Licensed under The MIT License
+* http://www.opensource.org/licenses/mit-license
+*/
+(function () {
+
+  var ConvertBase = function (num) {
+    return {
+      from: function (baseFrom) {
+        return {
+          to: function (baseTo) {
+            return parseInt(num, baseFrom).toString(baseTo);
+          }
+        };
+      }
+    };
+  };
+
+  // binary to decimal
+  ConvertBase.bin2dec = function (num) {
+    return ConvertBase(num).from(2).to(10);
+  };
+
+  // binary to hexadecimal
+  ConvertBase.bin2hex = function (num) {
+    return ConvertBase(num).from(2).to(16);
+  };
+
+  // decimal to binary
+  ConvertBase.dec2bin = function (num) {
+    return ConvertBase(num).from(10).to(2);
+  };
+
+  // decimal to hexadecimal
+  ConvertBase.dec2hex = function (num) {
+    return ConvertBase(num).from(10).to(16);
+  };
+
+  // hexadecimal to binary
+  ConvertBase.hex2bin = function (num) {
+    return ConvertBase(num).from(16).to(2);
+  };
+
+  // hexadecimal to decimal
+  ConvertBase.hex2dec = function (num) {
+    return ConvertBase(num).from(16).to(10);
+  };
+
+  this.ConvertBase = ConvertBase;
+
+})(this);
+
 // https://tc39.github.io/ecma262/#sec-%typedarray%.prototype.join
 if (!Int32Array.prototype.join) {
   Object.defineProperty(Int32Array.prototype, 'join', {
@@ -42,7 +113,9 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
   $scope.bleInit = function(){
     var paramsInit = {
-      request: true
+      request: true,
+      "statusReceiver": true,
+      "restoreKey": "growflowerpowerapp"
     };
 
     $cordovaBluetoothLE.initialize(paramsInit).then(null,
@@ -63,14 +136,14 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       allowDuplicates: false,
       //scanTimeout: 15000,
     };
-
+    
     if (window.cordova) {
       params.scanMode = bluetoothle.SCAN_MODE_LOW_POWER;
       params.matchMode = bluetoothle.MATCH_MODE_STICKY;
       params.matchNum = bluetoothle.MATCH_NUM_ONE_ADVERTISEMENT;
       //params.callbackType = bluetoothle.CALLBACK_TYPE_FIRST_MATCH;
     }
-
+    
     $log.log("Start Scan : " + JSON.stringify(params));
 
     $cordovaBluetoothLE.startScan(params).then(function(obj) {
@@ -79,15 +152,15 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       $log.log("Start Scan Error : " + JSON.stringify(obj));
     }, function(obj) {
       $log.log("Start Scan Success : " + JSON.stringify(obj));
-
+      
       addDevice(obj);
     });
-
+    
   }
-
+  
   $scope.stopScan = function() {
     $log.log("Stop Scan");
-
+    
     $cordovaBluetoothLE.stopScan().then(function(obj) {
       $log.log("Stop Scan Success : " + JSON.stringify(obj));
       var address = _.map($scope.devices, 'address');
@@ -96,27 +169,27 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       $log.log("Stop Scan Error : " + JSON.stringify(obj));
     });
   };
-
+  
   $scope.close = function(address) {
     var params = {address:address};
-
+    
     $log.log("Close : " + JSON.stringify(params));
-
+    
     $cordovaBluetoothLE.close(params).then(function(obj) {
-     $log.log("Close Success : " + JSON.stringify(obj));
+      $log.log("Close Success : " + JSON.stringify(obj));
     }, function(obj) {
       $log.log("Close Error : " + JSON.stringify(obj));
     });
-
+    
     var device = $scope.devices[address];
     device.services = {};
   };
-
+  
   $scope.connect = function(address) {
     var params = {address:address, timeout: 10000};
-
+    
     $log.log("Connect : " + JSON.stringify(params));
-
+    
     $cordovaBluetoothLE.connect(params).then(null, function(obj) {
       $log.log("Connect Error : " + JSON.stringify(obj));
       $scope.close(address); //Best practice is to close on connection error
@@ -128,44 +201,44 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       );
     });
   };
-
+  
   $scope.discover = function(address) {
     var q = $q.defer()
     var params = {
       address: address,
       timeout: 50000 //10000 DEFAULT
     };
-
+    
     $log.log("Discover : " + JSON.stringify(params));
-
+    
     $cordovaBluetoothLE.discover(params).then(function(obj) {
       $log.log("Discover Success : " + JSON.stringify(obj));
-
+      
       var device = $scope.devices[obj.address];
-
+      
       var services = obj.services;
-
+      
       for (var i = 0; i < services.length; i++) {
         var service = services[i];
-
+        
         addService(service, device);
-
+        
         var serviceNew = device.services[service.uuid];
-
+        
         var characteristics = service.characteristics;
-
+        
         for (var j = 0; j < characteristics.length; j++) {
           var characteristic = characteristics[j];
-
+          
           addCharacteristic(characteristic, serviceNew);
-
+          
           var characteristicNew = serviceNew.characteristics[characteristic.uuid];
-
+          
           var descriptors = characteristic.descriptors;
-
+          
           for (var k = 0; k < descriptors.length; k++) {
             var descriptor = descriptors[k];
-
+            
             addDescriptor(descriptor, characteristicNew);
           }
         }
@@ -175,7 +248,57 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       $log.log("Discover Error : " + JSON.stringify(obj));
       q.reject("Discover Eror: " + JSON.stringify(obj));
     });
-    return q.promise
+    return q.promise;
+  };
+  
+  $scope.transferData = function (address) {
+    var q = $q.defer();
+
+    var uploadService = "39E1FB00-84A8-11E2-AFBA-0002A5D5C51B";
+    var params = {
+      address: address,
+      service: uploadService,
+      characteristic: "39E1FB02-84A8-11E2-AFBA-0002A5D5C51B"
+    };
+    
+    $cordovaBluetoothLE.subscribe(params).then(null, function (obj) {
+      q.reject(obj.message);
+    }, function (obj) {
+      $scope.write(address, uploadService, "39E1FB03-84A8-11E2-AFBA-0002A5D5C51B", 0, 1).then(function () {  //0 -> Ready state
+        $log.log("rx status is now ready boi!");
+      }, function (obj) {
+        $log.log("failed to set rx status to ready: " + JSON.stringify(obj));
+      });
+    });
+  }
+  
+  $scope.subscribe = function(address, service, characteristic) {
+    var params = {
+      address:address,
+      service:service,
+      characteristic:characteristic,
+      timeout: 5000,
+      //subscribeTimeout: 5000
+    };
+
+    $log.log("Subscribe : " + JSON.stringify(params));
+
+    $cordovaBluetoothLE.subscribe(params).then(function(obj) {
+      $log.log("Subscribe Auto Unsubscribe : " + JSON.stringify(obj));
+    }, function(obj) {
+      $log.log("Subscribe Error : " + JSON.stringify(obj));
+    }, function(obj) {
+
+      if (obj.status == "subscribedResult") {
+        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        $log.log("Subscribe Success ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
+        $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
+      } else if (obj.status == "subscribed") {
+        $log.log("Subscribed: " + JSON.stringify(obj));
+      } else {
+        $log.log("Unexpected Subscribe Status");
+      }
+    });
   };
 
   $scope.gatherTransferSetupParameters = function(address){
@@ -183,10 +306,10 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     var historyCharacUUIDs = {
       nbEntries: "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B",
       lastEntryIndex: "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B",
-      sessionStartIndex: "39E1FC02-84A8-11E2-AFBA-0002A5D5C51B",
-      sessionPeriod: "39E1FC06-84A8-11E2-AFBA-0002A5D5C51B",
-      time: "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B",
-      sessionId: "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B",
+      transferStartIndex: "39E1FC03-84A8-11E2-AFBA-0002A5D5C51B",
+      currentSeesionId: "39E1FC04-84A8-11E2-AFBA-0002A5D5C51B",
+      currentSessionStartIndex: "39E1FC05-84A8-11E2-AFBA-0002A5D5C51B",
+      currentSessionPeriod: "39E1FC06-84A8-11E2-AFBA-0002A5D5C51B",
     }
     
     $q.all([
@@ -200,12 +323,17 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
             characterisitics[elementKey] = element[elementKey];
           });
           $log.log(characterisitics);
-          firstEntryIndex = calculateFirstEntryIndex(characterisitics["lastEntryIndex"], characterisitics["nbEntries"]);
+          firstEntryIndex = calculateFirstEntryIndex(characterisitics.lastEntryIndex, characterisitics.nbEntries);
           $log.log("first entry index: " + firstEntryIndex);
-          $scope.writeTransferStartIndex(address, firstEntryIndex);
+          $scope.write(address, historyService, historyCharacUUIDs.transferStartIndex, firstEntryIndex, 4).then(function(){
+            $scope.transferData(address);
+          },function(){
+            $log.log("err failed to write transfer start index")
+          });
         },
         function(){
           $log.log("err");
+          q.reject();
         }
       );
   }
@@ -282,13 +410,33 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     $scope.stopScan();
   }
 
-  $scope.writeTransferStartIndex = function (address, firstEntryIndex) {
+  function binStringToTypedBinStr(binString, numOfBytes){
+    var leadingZeros = (numOfBytes * 8) - binString.length;
+    var filledBinStr = "";
+    if (leadingZeros > 0){
+      for(var i=0; i<leadingZeros; i++){
+        filledBinStr += '0';
+      }
+    }
+    return filledBinStr + binString;
+  }
+
+  $scope.write = function (address, service, characteristic, value, numOfBytes) {
+    var q = $q.defer();
+
+    $log.log("value: " + value);
+    var binString = ConvertBase.dec2bin(value.toString());
+    $log.log("value to binstring: " + binString);
+    var typedBinStr = binStringToTypedBinStr(binString, numOfBytes);
+    $log.log("typed binary string: " + typedBinStr);
+    var encodedString = window.btoa(typedBinStr)
+    $log.log("encodedString: " + encodedString);
+
     var params = {
       address: address,
-      service: "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B",
-      characteristic: "39E1FC03-84A8-11E2-AFBA-0002A5D5C51B",
-      value: $cordovaBluetoothLE.bytesToEncodedString($cordovaBluetoothLE.stringToBytes(firstEntryIndex.toString())),
-      type: "noResponse",
+      service: service,
+      characteristic: characteristic,
+      value: encodedString,
       timeout: 5000
     };
 
@@ -296,9 +444,12 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
     $cordovaBluetoothLE.write(params).then(function (obj) {
       $log.log("Write Success : " + JSON.stringify(obj));
+      q.resolve(obj);
     }, function (obj) {
       $log.log("Write Error : " + JSON.stringify(obj));
+      q.reject(obj);
     });
+    return q.promise;
   };
 
   $scope.read = function(address, service, characteristic){
@@ -318,34 +469,4 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
         $log.log("Read Error : " + JSON.stringify(obj));
     });
   }
-
-  $scope.subscribe = function(address, service, characteristic) {
-    var params = {
-      address:address,
-      service:service,
-      characteristic:characteristic,
-      timeout: 5000,
-      //subscribeTimeout: 5000
-    };
-
-    $log.log("Subscribe : " + JSON.stringify(params));
-
-    $cordovaBluetoothLE.subscribe(params).then(function(obj) {
-      $log.log("Subscribe Auto Unsubscribe : " + JSON.stringify(obj));
-    }, function(obj) {
-      $log.log("Subscribe Error : " + JSON.stringify(obj));
-    }, function(obj) {
-
-      if (obj.status == "subscribedResult") {
-        var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        $log.log("Subscribe Success ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
-        $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
-      } else if (obj.status == "subscribed") {
-        $log.log("Subscribed");
-      } else {
-        $log.log("Unexpected Subscribe Status");
-      }
-    });
-  };
-
 });
