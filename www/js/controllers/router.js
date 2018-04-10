@@ -67,6 +67,46 @@ if (!Int16Array.prototype.join) {
   });
 }
 
+if (!Int8Array.__proto__.from) {
+  (function () {
+    Int8Array.__proto__.from = function (obj, func, thisObj) {
+
+      var typedArrayClass = Int8Array.__proto__;
+      if (typeof this !== 'function') {
+        throw new TypeError('# is not a constructor');
+      }
+      if (this.__proto__ !== typedArrayClass) {
+        throw new TypeError('this is not a typed array.');
+      }
+
+      func = func || function (elem) {
+        return elem;
+      };
+
+      if (typeof func !== 'function') {
+        throw new TypeError('specified argument is not a function');
+      }
+
+      obj = Object(obj);
+      if (!obj['length']) {
+        return new this(0);
+      }
+      var copy_data = [];
+      for (var i = 0; i < obj.length; i++) {
+        copy_data.push(obj[i]);
+      }
+
+      copy_data = copy_data.map(func, thisObj);
+
+      var typed_array = new this(copy_data.length);
+      for (var i = 0; i < typed_array.length; i++) {
+        typed_array[i] = copy_data[i];
+      }
+      return typed_array;
+    }
+  })();
+}
+
 var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen', 'ngCordova']);
 
 // configure our routes
@@ -409,19 +449,23 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   $scope.write = function (address, service, characteristic, value, numOfBytes) {
     var q = $q.defer();
 
-    $log.log("value: " + value);
-    var binString = ConvertBase.dec2bin(value.toString());
-    $log.log("value to binstring: " + binString);
-    var typedBinStr = binStringToTypedBinStr(binString, numOfBytes);
-    $log.log("typed binary string: " + typedBinStr);
-    var encodedString = window.btoa(typedBinStr)
-    $log.log("encodedString: " + encodedString);
+    var buffer = new ArrayBuffer(numOfBytes);
+    switch(numOfBytes){
+      case 4:
+        var typedByteArray = new Uint32Array(buffer);
+        typedByteArray = Uint32Array.from(value.toString(2));
+      case 1:
+        // var dataView = new DataView(buffer).setUint8(0,value,true);
+        // var typedArray = new Uint8Array(buffer);
+        // var encodedString = $cordovaBluetoothLE.bytesToEncodedString(buffer);
+    }
+
 
     var params = {
       address: address,
       service: service,
       characteristic: characteristic,
-      value: encodedString,
+      value: window.btoa("00000001100001010011111110001100"),
       timeout: 5000
     };
 
