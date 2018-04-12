@@ -369,6 +369,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     $cordovaBluetoothLE.read({ address: address, service: service, characteristic: characteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+        $log.log("read return value: " + JSON.stringify(obj));
         var returnObj = {};
         switch(returnType){
           case "U16":
@@ -393,7 +394,11 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   }
 
   function calculateFirstEntryIndex(lastEntryIndex, nbEntries){
-    return (lastEntryIndex - nbEntries + 1);
+    $log.log("params: " + lastEntryIndex + "    " + nbEntries);
+    var ret = lastEntryIndex - nbEntries +1;
+
+    $log.log("return of sum: " + ret);
+    return (ret);
   }
 
   function addService(service, device) {
@@ -426,9 +431,15 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       return;
     }
 
+    if (obj.name == "HTC BS 022AFD" || obj.name == "HTC BS D1DCA2" || obj.name == "[LG] webOS TV UJ630V"){
+      return;
+    }
+
     if ($scope.devices[obj.address] !== undefined) {
       return;
     }
+
+
 
     obj.services = {};
     $scope.devices[obj.address] = obj;
@@ -445,22 +456,30 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     }
     return filledBinStr + binString;
   }
+  
+  $scope.encode32Bit = function (value) {
+    var u32 = new Uint32Array([value]); // Create a new Types Array, which is a special view for an Array Buffer
+    var u8 = new Uint8Array(u32.buffer); // We transmit bytewise, so use an 8 Bit View on the Array Buffer
+    $log.log("u8: " + u8);
+    return $cordovaBluetoothLE.bytesToEncodedString(u8); // Encode this Base64
+  }
 
   $scope.write = function (address, service, characteristic, value, numOfBytes) {
     var q = $q.defer();
-
+    
     var buffer = new ArrayBuffer(numOfBytes);
+    $log.log("Buffer init: " + JSON.stringify(buffer));
     switch(numOfBytes){
       case 4:
-        new DataView(buffer).setUint32(0, value, true);
-        var byteArray = new DataView(buffer).getUint8(0, true);
-        $log.log(byteArray);
-        var encodedString = base64ArrayBuffer(byteArray);
-        $log.log(encodedString);
+      new DataView(buffer).setUint32(0, value, false);
+      $log.log("buffer: " + JSON.stringify(buffer));
+      var byteArray = new Uint8Array(buffer);
+      $log.log("byteArray: " + JSON.stringify(byteArray));
+      // var encodedString = base64js.fromByteArray(byteArray);
+      var encodedString = $scope.encode32Bit(value); 
+        $log.log("Encoded String: " + encodedString);
       case 1:
-        // var dataView = new DataView(buffer).setUint8(0,value,true);
-        // var typedArray = new Uint8Array(buffer);
-        // var encodedString = $cordovaBluetoothLE.bytesToEncodedString(buffer);
+        
     }
 
 
@@ -513,6 +532,7 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
+
 
 function base64ArrayBuffer(arrayBuffer) {
   var base64 = ''
