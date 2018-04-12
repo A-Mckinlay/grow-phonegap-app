@@ -1,110 +1,27 @@
-/**
-* Convert From/To Binary/Decimal/Hexadecimal in JavaScript
-* https://gist.github.com/faisalman
-*
-* Copyright 2012-2015, Faisalman <fyzlman@gmail.com>
-* Licensed under The MIT License
-* http://www.opensource.org/licenses/mit-license
-*/
-(function () {
-
-  var ConvertBase = function (num) {
-    return {
-      from: function (baseFrom) {
-        return {
-          to: function (baseTo) {
-            return parseInt(num, baseFrom).toString(baseTo);
-          }
-        };
-      }
-    };
-  };
-
-  // binary to decimal
-  ConvertBase.bin2dec = function (num) {
-    return ConvertBase(num).from(2).to(10);
-  };
-
-  // binary to hexadecimal
-  ConvertBase.bin2hex = function (num) {
-    return ConvertBase(num).from(2).to(16);
-  };
-
-  // decimal to binary
-  ConvertBase.dec2bin = function (num) {
-    return ConvertBase(num).from(10).to(2);
-  };
-
-  // decimal to hexadecimal
-  ConvertBase.dec2hex = function (num) {
-    return ConvertBase(num).from(10).to(16);
-  };
-
-  // hexadecimal to binary
-  ConvertBase.hex2bin = function (num) {
-    return ConvertBase(num).from(16).to(2);
-  };
-
-  // hexadecimal to decimal
-  ConvertBase.hex2dec = function (num) {
-    return ConvertBase(num).from(16).to(10);
-  };
-
-  this.ConvertBase = ConvertBase;
-
-})(this);
-
-// https://tc39.github.io/ecma262/#sec-%typedarray%.prototype.join
-if (!Int32Array.prototype.join) {
-  Object.defineProperty(Int32Array.prototype, 'join', {
-    value: Array.prototype.join
-  });
+function decToByteString(dec){
+  var binStr = dec.toString(2);
+  while(binStr.length<8)
+  {
+    binStr = "0" + binStr;
+  }
+  return binStr;
 }
 
-if (!Int16Array.prototype.join) {
-  Object.defineProperty(Int16Array.prototype, 'join', {
-    value: Array.prototype.join
-  });
+function byteArrayToBitString(byteArray){
+  var bitString = "";
+  for(var i=0; i<byteArray.length; i++){
+    var bitStringOfByte = decToByteString(byteArray[i]);
+    bitString = bitStringOfByte + bitString;  }
+  return bitString;
 }
 
-if (!Int8Array.__proto__.from) {
-  (function () {
-    Int8Array.__proto__.from = function (obj, func, thisObj) {
+function binToDec(bitString){
+  return parseInt(bitString, 2);
+}
 
-      var typedArrayClass = Int8Array.__proto__;
-      if (typeof this !== 'function') {
-        throw new TypeError('# is not a constructor');
-      }
-      if (this.__proto__ !== typedArrayClass) {
-        throw new TypeError('this is not a typed array.');
-      }
-
-      func = func || function (elem) {
-        return elem;
-      };
-
-      if (typeof func !== 'function') {
-        throw new TypeError('specified argument is not a function');
-      }
-
-      obj = Object(obj);
-      if (!obj['length']) {
-        return new this(0);
-      }
-      var copy_data = [];
-      for (var i = 0; i < obj.length; i++) {
-        copy_data.push(obj[i]);
-      }
-
-      copy_data = copy_data.map(func, thisObj);
-
-      var typed_array = new this(copy_data.length);
-      for (var i = 0; i < typed_array.length; i++) {
-        typed_array[i] = copy_data[i];
-      }
-      return typed_array;
-    }
-  })();
+function byteArrayToDecimal(byteArray){
+  var bitString = byteArrayToBitString(byteArray);
+  return binToDec(bitString);
 }
 
 var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen', 'ngCordova']);
@@ -369,14 +286,13 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     $cordovaBluetoothLE.read({ address: address, service: service, characteristic: characteristic }).then(
       function (obj) {
         var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-        $log.log("read return value: " + JSON.stringify(obj));
         var returnObj = {};
         switch(returnType){
           case "U16":
-            returnObj[name] = new Int16Array(bytes).join('')
+            returnObj[name] = byteArrayToDecimal(new Uint8Array(bytes));
             q.resolve(returnObj);
           case "U32":
-            returnObj[name] = new Int32Array(bytes).join('')
+            returnObj[name] = byteArrayToDecimal(new Uint8Array(bytes));
             q.resolve(returnObj);
         }  
       },
@@ -445,17 +361,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     $scope.devices[obj.address] = obj;
     $scope.stopScan();
   }
-
-  function binStringToTypedBinStr(binString, numOfBytes){
-    var leadingZeros = (numOfBytes * 8) - binString.length;
-    var filledBinStr = "";
-    if (leadingZeros > 0){
-      for(var i=0; i<leadingZeros; i++){
-        filledBinStr += '0';
-      }
-    }
-    return filledBinStr + binString;
-  }
   
   $scope.encode32Bit = function (value) {
     var u32 = new Uint32Array([value]); // Create a new Types Array, which is a special view for an Array Buffer
@@ -467,21 +372,10 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   $scope.write = function (address, service, characteristic, value, numOfBytes) {
     var q = $q.defer();
     
-    var buffer = new ArrayBuffer(numOfBytes);
-    $log.log("Buffer init: " + JSON.stringify(buffer));
     switch(numOfBytes){
       case 4:
-      new DataView(buffer).setUint32(0, value, false);
-      $log.log("buffer: " + JSON.stringify(buffer));
-      var byteArray = new Uint8Array(buffer);
-      $log.log("byteArray: " + JSON.stringify(byteArray));
-      // var encodedString = base64js.fromByteArray(byteArray);
       var encodedString = $scope.encode32Bit(value); 
-        $log.log("Encoded String: " + encodedString);
-      case 1:
-        
     }
-
 
     var params = {
       address: address,
