@@ -35,7 +35,7 @@ function encode8Bit(value){
   return window.bluetoothle.bytesToEncodedString(u8);
 }
 
-var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'onsen', 'ngCordova']);
+var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'ngCordova']);
 
 // configure our routes
 growApp.config(function($routeProvider) {
@@ -57,8 +57,22 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
   var db = $cordovaSQLite.openDB({ name: "my.db", location: 'default' });
   $scope.bleEnabled = false;
+  $log.log("ascertain location permissions")
+  $cordovaBluetoothLE.hasPermission().then(function (response) {
+    $log.log("hasPermission: " + JSON.stringify(response));
+    if (!response.hasPermission) {
+      $cordovaBluetoothLE.requestPermission().then(function (response) {
+        $log.log("Coarse location permissions granted: " + JSON.stringify(response));
+      },
+      function (response) {
+        $log.log("Course location permissions declined: " + JSON.stringify(response));
+      });
+    }
+  });
+  
 
-  document.addEventListener('tap', function(){
+  document.addEventListener('onclick', function(){
+    $scope.bleInit();
     $scope.startScan();
   });
 
@@ -67,32 +81,28 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   $scope.bleInit = function(){
     var paramsInit = {
       request: true,
-      "statusReceiver": true,
-      "restoreKey": "growflowerpowerapp"
+      statusReceiver: true,
+      restoreKey: "growflowerpowerapp",
     };
 
-    $cordovaBluetoothLE.initialize(paramsInit).then(null,
-    function(obj) {
-      $scope.bleEnabled = false;
-      //$log.log("Initialize Error : " + JSON.stringify(obj)); //Should only happen when testing in browser
+    $cordovaBluetoothLE.initialize(paramsInit).then(function(response){
+      $log.log("initialized: " + JSON.stringify(response));
     },
-    function(obj) {
-      //$log.log("Initialize Success : " + JSON.stringify(obj));
-      $scope.bleEnabled = true;
-      //$log.log($scope.bleEnabled);
+    function(reponse){
+      $log.log("Failed to initialize bluetooth got response: " + JSON.stringify(response));
     });
   }
 
   $scope.startScan = function(){
     var params = {
-      services:[],
+      services: ["39E1FA00-84A8-11E2-AFBA-0002A5D5C51B"], //Will only return devices with this service(live service)
       allowDuplicates: false,
       //scanTimeout: 15000,
     };
     
     if (window.cordova) {
       params.scanMode = bluetoothle.SCAN_MODE_LOW_POWER;
-      params.matchMode = bluetoothle.MATCH_MODE_STICKY;
+      params.matchMode = bluetoothle.MATCH_MODE_AGGRESSIVE;
       params.matchNum = bluetoothle.MATCH_NUM_ONE_ADVERTISEMENT;
       //params.callbackType = bluetoothle.CALLBACK_TYPE_FIRST_MATCH;
     }
@@ -165,7 +175,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     $log.log("Discover : " + JSON.stringify(params));
     
     $cordovaBluetoothLE.discover(params).then(function(obj) {
-      $log.log("Discover Success : " + JSON.stringify(obj));
+      //$log.log("Discover Success : " + JSON.stringify(obj));
       
       var device = $scope.devices[obj.address];
       
@@ -205,22 +215,35 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   };
   
   $scope.transferData = function (address) {
-    var q = $q.defer();
 
     var uploadService = "39E1FB00-84A8-11E2-AFBA-0002A5D5C51B";
     var params = {
       address: address,
       service: uploadService,
-      characteristic: "39E1FB02-84A8-11E2-AFBA-0002A5D5C51B"
+      characteristic: "39E1FB02-84A8-11E2-AFBA-0002A5D5C51B",
+      timeout: 5000,
     };
     
-    $cordovaBluetoothLE.subscribe(params).then(null, function (obj) {
-      q.reject(obj.message);
-    }, function (obj) {
-      $scope.write(address, uploadService, "39E1FB03-84A8-11E2-AFBA-0002A5D5C51B", 0, 1).then(function () {  //0 -> Ready state
-        $log.log("rx status is now ready boi!");
-      }, function (obj) {
-        $log.log("failed to set rx status to ready: " + JSON.stringify(obj));
+    $log.log("subscribing...")
+    
+    $cordovaBluetoothLE.subscribe(params).then(null, function (response) {
+      $log.log("subscription failed: " + JSON.stringify(response));
+    }, 
+    function(response){
+      $log.log("subscribed to tx status:" + JSON.stringify(response));
+      $cordovaBluetoothLE.subscribe({ address: address, service: params.service, characteristic: "39E1FB01-84A8-11E2-AFBA-0002A5D5C51B", timeout: params.timeout }).then(null, function (response) {
+        $log.log("subscription failed: " + JSON.stringify(response));
+      },
+      function(response){
+        $log.log("subscribed to tx buffer:" + JSON.stringify(response));
+        $log.log("Beginning Transfer Process...");
+  
+        $scope.write(address, uploadService, "39E1FB03-84A8-11E2-AFBA-0002A5D5C51B", 0, 1).then(function (response) {  //0 -> Ready state
+          $log.log("rx status set to ready state" + JSON.stringify(response));
+        },
+        function (response) {
+          $log.log("failed to set rx status to ready: " + JSON.stringify(response));
+        });
       });
     });
   }
@@ -275,9 +298,9 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
             elementKey = Object.keys(element)[0];
             characterisitics[elementKey] = element[elementKey];
           });
-          $log.log(characterisitics);
+          //$log.log(characterisitics);
           firstEntryIndex = calculateFirstEntryIndex(characterisitics.lastEntryIndex, characterisitics.nbEntries);
-          $log.log("first entry index: " + firstEntryIndex);
+          //$log.log("first entry index: " + firstEntryIndex);
           $scope.write(address, historyService, historyCharacUUIDs.transferStartIndex, firstEntryIndex, 4).then(function(){
             $scope.transferData(address);
           },function(){
@@ -321,11 +344,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   }
 
   function calculateFirstEntryIndex(lastEntryIndex, nbEntries){
-    $log.log("params: " + lastEntryIndex + "    " + nbEntries);
-    var ret = lastEntryIndex - nbEntries +1;
-
-    $log.log("return of sum: " + ret);
-    return (ret);
+    return lastEntryIndex - nbEntries + 1;;
   }
 
   function addService(service, device) {
@@ -354,20 +373,7 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       return;
     }
 
-    if(obj.name == null){
-      return;
-    }
-
-    if (obj.name == "HTC BS 022AFD" || obj.name == "HTC BS D1DCA2" || obj.name == "[LG] webOS TV UJ630V"){
-      return;
-    }
-
-    if ($scope.devices[obj.address] !== undefined) {
-      return;
-    }
-
-
-
+    $log.log("adding device to list: " + JSON.stringify(obj));
     obj.services = {};
     $scope.devices[obj.address] = obj;
     $scope.stopScan();
@@ -390,14 +396,12 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
       timeout: 5000
     };
 
-    $log.log("Write : " + JSON.stringify(params));
-
-    $cordovaBluetoothLE.write(params).then(function (obj) {
-      $log.log("Write Success : " + JSON.stringify(obj));
-      q.resolve(obj);
-    }, function (obj) {
-      $log.log("Write Error : " + JSON.stringify(obj));
-      q.reject(obj);
+    $cordovaBluetoothLE.write(params).then(function (response) {
+      $log.log("Write Success : " + JSON.stringify(response));
+      q.resolve(response);
+    }, function (response) {
+      $log.log("Write Error : " + JSON.stringify(response));
+      q.reject(response);
     });
     return q.promise;
   };
