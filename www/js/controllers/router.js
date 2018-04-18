@@ -1,40 +1,3 @@
-function decToByteString(dec){
-  var binStr = dec.toString(2);
-  while(binStr.length<8){
-    binStr = "0" + binStr;
-  }
-  return binStr;
-}
-
-function byteArrayToBitString(byteArray){
-  var bitString = "";
-  for(var i=0; i<byteArray.length; i++){
-    var bitStringOfByte = decToByteString(byteArray[i]);
-    bitString = bitStringOfByte + bitString;  
-  }
-  return bitString;
-}
-
-function binToDec(bitString){
-  return parseInt(bitString, 2);
-}
-
-function byteArrayToDecimal(byteArray){
-  var bitString = byteArrayToBitString(byteArray);
-  return binToDec(bitString);
-}
-
-function encode32Bit(value){
-  var u32 = new Uint32Array([value]);
-  var u8 = new Uint8Array(u32.buffer);
-  return window.bluetoothle.bytesToEncodedString(u8);
-}
-
-function encode8Bit(value){
-  var u8 = new Uint8Array([value]);
-  return window.bluetoothle.bytesToEncodedString(u8);
-}
-
 var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'ngCordova']);
 
 // configure our routes
@@ -424,3 +387,41 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     });
   }
 });
+
+function decToByteString(dec) {
+  var binStr = dec.toString(2);
+  while (binStr.length < 8) {
+    binStr = "0" + binStr;
+  }
+  return binStr;
+}
+
+function byteArrayToBitString(byteArray) {
+  var bitString = "";
+  for (var i = 0; i < byteArray.length; i++) {
+    var bitStringOfByte = decToByteString(byteArray[i]);
+    bitString = bitStringOfByte + bitString;
+  }
+  return bitString;
+}
+
+function binToDec(bitString) {
+  return parseInt(bitString, 2);
+}
+
+function byteArrayToDecimal(byteArray) {
+  var bitString = byteArrayToBitString(byteArray);
+  return binToDec(bitString);
+}
+
+function encode32Bit(value) {
+  var u32 = new Uint32Array([value]);
+  var u8 = new Uint8Array(u32.buffer);
+  return window.bluetoothle.bytesToEncodedString(u8);
+}
+
+function encode8Bit(value) {
+  var u8 = new Uint8Array([value]);
+  return window.bluetoothle.bytesToEncodedString(u8);
+}
+
