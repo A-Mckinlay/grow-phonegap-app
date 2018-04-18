@@ -95,9 +95,8 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
 
   $scope.startScan = function(){
     var params = {
-      services:[],
+      services: ["39E1FA00-84A8-11E2-AFBA-0002A5D5C51B"], //Will only return devices with this service(live service)
       allowDuplicates: false,
-
       //scanTimeout: 15000,
     };
     
@@ -373,19 +372,6 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     if (obj.status == "scanStarted") {
       return;
     }
-
-    if(obj.name == null){
-      return;
-    }
-
-    if (obj.name == "HTC BS 022AFD" || obj.name == "HTC BS D1DCA2" || obj.name == "[LG] webOS TV UJ630V"){
-      return;
-    }
-
-    if ($scope.devices[obj.address] !== undefined) {
-      return;
-    }
-
 
     $log.log("adding device to list: " + JSON.stringify(obj));
     obj.services = {};
