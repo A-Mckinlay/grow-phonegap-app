@@ -34,10 +34,10 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
   });
   
 
-  document.addEventListener('onclick', function(){
+  $scope.go = function(){
     $scope.bleInit();
     $scope.startScan();
-  });
+  }
 
   $scope.devices = {};
 
@@ -189,19 +189,19 @@ growApp.controller('router', function($scope, $cordovaBluetoothLE, $cordovaSQLit
     
     $log.log("subscribing...")
     
-    $cordovaBluetoothLE.subscribe(params).then(null, function (response) {
+    $cordovaBluetoothLE.subscribe(params).then(null, function (response) { //Sub Tx Status
       $log.log("subscription failed: " + JSON.stringify(response));
     }, 
     function(response){
       $log.log("subscribed to tx status:" + JSON.stringify(response));
-      $cordovaBluetoothLE.subscribe({ address: address, service: params.service, characteristic: "39E1FB01-84A8-11E2-AFBA-0002A5D5C51B", timeout: params.timeout }).then(null, function (response) {
+      $cordovaBluetoothLE.subscribe({ address: address, service: params.service, characteristic: "39E1FB01-84A8-11E2-AFBA-0002A5D5C51B", timeout: params.timeout }).then(null, function (response) { //Sub Tx Buffer
         $log.log("subscription failed: " + JSON.stringify(response));
       },
       function(response){
         $log.log("subscribed to tx buffer:" + JSON.stringify(response));
         $log.log("Beginning Transfer Process...");
   
-        $scope.write(address, uploadService, "39E1FB03-84A8-11E2-AFBA-0002A5D5C51B", 0, 1).then(function (response) {  //0 -> Ready state
+        $scope.write(address, uploadService, "39E1FB03-84A8-11E2-AFBA-0002A5D5C51B", 1, 1).then(function (response) {  //1 -> Receving state
           $log.log("rx status set to ready state" + JSON.stringify(response));
         },
         function (response) {
