@@ -26,6 +26,15 @@
   <script src="./js/Libs/lodash.core.js"></script>
   <link rel="stylesheet" type="text/css" href="css/index.css" /> <!--Remove-->
   <script type="text/javascript" src="cordova.js"></script>
+  <script src="js/growApp.js"></script>
+  <script src="./js/services/DataTxHelper.js"></script>
+  <script src="./js/services/ble/Connect.js"></script>
+  <script src="./js/services/ble/InitializeCentral.js"></script>
+  <script src="./js/services/ble/Read.js"></script>
+  <script src="./js/services/ble/Write.js"></script>
+  <script src="./js/services/ble/Scanning.js"></script>  
+  <script src="./js/services/ble/Subscribe.js"></script>
+  <script type="text/javascript" src="js/controllers/router.js"></script>
 </head>
 
 <body ng-controller='router' id="growApp">
@@ -36,8 +45,8 @@
       <ons-list-item modifier="longdivider" tappable ng-repeat="device in devices" onclick="connect(device)">{{ device.name }}</ons-list-item>
     </ons-list> -->
 
-        <button id="startScanBtn" ripple modifier="large" ng-click="startScan()" >Start Scan</button>
-        <script type="text/javascript" src="js/controllers/router.js"></script>
+        <button id="startScanBtn" ripple modifier="large" ng-click="begin()" >Start Scan</button>
+
 
     <!-- <ons-tabbar>
       <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />
