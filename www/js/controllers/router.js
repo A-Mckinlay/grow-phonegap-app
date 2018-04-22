@@ -51,13 +51,6 @@ growApp.controller('router', ['Subscribe', 'Scanning', 'Write', 'Read', 'Connect
       }
     }
 
-    var params = {
-      address: address,
-      service: uploadService,
-      characteristic: "39E1FB02-84A8-11E2-AFBA-0002A5D5C51B",
-      timeout: 5000,
-    };
-
     $log.log("subscribing...")
 
     Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txStatus).then(null, function (response) {
