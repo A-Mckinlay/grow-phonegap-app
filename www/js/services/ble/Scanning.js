@@ -31,10 +31,10 @@ growApp.service('Scanning', ['InitializeCentral', '$cordovaBluetoothLE', '$log',
         };
 
         if (window.cordova) {
-            params.scanMode = bluetoothle.SCAN_MODE_LOW_POWER;
+            params.scanMode = bluetoothle.SCAN_MODE_LOW_LATENCY;
             params.matchMode = bluetoothle.MATCH_MODE_AGGRESSIVE;
-            params.matchNum = bluetoothle.MATCH_NUM_ONE_ADVERTISEMENT;
-            //params.callbackType = bluetoothle.CALLBACK_TYPE_FIRST_MATCH;
+            params.matchNum = bluetoothle.MATCH_NUM_MAX_ADVERTISEMENT;
+            params.callbackType = bluetoothle.CALLBACK_TYPE_ALL_MATCHES;
         }
 
         $log.log("Start Scan : " + JSON.stringify(params));

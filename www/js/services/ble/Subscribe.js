@@ -1,6 +1,6 @@
 var growApp = angular.module('growApp');
 
-growApp.service('Subscribe', ['$q', 'DataTxHelper', '$cordovaBluetoothLE', '$log', function ($q, DataTxHelper, $cordovaBluetoothLE, $log) { 
+growApp.service('Subscribe', ['$q', '$cordovaBluetoothLE', '$log', function ($q, $cordovaBluetoothLE, $log) { 
     
     
 
@@ -28,9 +28,9 @@ growApp.service('Subscribe', ['$q', 'DataTxHelper', '$cordovaBluetoothLE', '$log
 
             if (obj.status == "subscribedResult") {
                 //$log.log("Subscribed Result");
-                var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
-                $log.log("Subscribe Success ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
-                $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
+                // var bytes = $cordovaBluetoothLE.encodedStringToBytes(obj.value);
+                // $log.log("Subscribe Success ASCII (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToString(bytes));
+                // $log.log("HEX (" + bytes.length + "): " + $cordovaBluetoothLE.bytesToHex(bytes));
                 q.notify(obj);
             } else if (obj.status == "subscribed") {
                 $log.log("Subscribed");

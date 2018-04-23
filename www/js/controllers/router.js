@@ -1,6 +1,6 @@
 var growApp = angular.module('growApp');
 
-growApp.controller('router', ['Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$cordovaSQLite', '$log', '$q', function (Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $cordovaSQLite, $log, $q) {
+growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$cordovaSQLite', '$log', '$q', function (TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $cordovaSQLite, $log, $q) {
 
   var db = $cordovaSQLite.openDB({ name: "my.db", location: 'default' });
   var address = "90:03:B7:C9:D9:C7"; //this should be fetched from the DB dependant on which device the user has chosen to connect to.
@@ -51,28 +51,62 @@ growApp.controller('router', ['Subscribe', 'Scanning', 'Write', 'Read', 'Connect
       }
     }
 
+    var peripheralStates = ['idle', 'transferring', 'awaitingAck']; //Will be used like an enum, e.g peripheralStates[2] will return 'awaitingAck'. Peripheral being the flower power.
+    var deviceStates = ['standby', 'receiving', 'ack', 'nack', 'cancel', 'error']; //As above but for the mobile device.
+
+    var packetQueue = [];
+    var file = [];
+    errorCount = 0;
+
     $log.log("subscribing...")
 
-    Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txStatus).then(null, function (response) {
-      $log.log("subscription failed: " + JSON.stringify(response));
-    },
-      function (response) {
-        $log.log("subscribed to tx status:" + JSON.stringify(response));
-        Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txBuffer).then(null, function (response) {
-          $log.log("subscription failed: " + JSON.stringify(response));
-        },
-          function (response) {
-            $log.log("subscribed to tx buffer:" + JSON.stringify(response));
-            Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, 1, 1).then(function (response) {  //1 -> Recieving state
-              $log.log("rx status set to receiving state" + JSON.stringify(response));
-            },
-              function (response) {
-                $log.log("failed to set rx status to ready: " + JSON.stringify(response));
-              });
+    Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txStatus).then(null, null, function (peripheralState) {
+      $log.log("Peripheral State Notification:" + JSON.stringify(peripheralState));
+      if (peripheralState.value && peripheralStates[DataTxHelper.oneByteEncodedStrToDec(peripheralState.value)] == 'awaitingAck'){
+        var group = TxPackets.transformPackets(packetQueue);
+        var validity = TxPackets.verifyGroup(group);
+
+        if(validity === 'ack'){
+          file.concat(group);
+          errorCount = 0;
+        }else{
+          errorCount++;
+        }
+        
+        if (errorCount >= 3) {
+          validity = 'error';
+        } else if(timeTransferGroup >= 1000){
+          validity = 'error';
+        }
+
+        Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, deviceStates.indexOf(validity), 1).then(function(){$log.log(validity + "'d")});
+        if(validity === error){
+          q.reject()
+        }
+        packetQueue = [];
+      }
+      Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txBuffer).then(null, null, function(dataPacket){
+        if(dataPacket.status == "subscribed"){
+          Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, 1, 1).then(function () { //1 -> Recieving state
+            $log.log("rxStatus -> ReceivingState")
           });
+        } else if(dataPacket.status == "subscribedResult"){
+          startTransferFrame = performance.now()
+          packetQueue.push(dataPacket.value);
+          endTransferFrame = performance.now()
+        }
       });
+    });
 
     return q.promise;
+  }
+
+  function transferResponse(validity, errorCount){
+    var q = $q.defer();
+
+    if(validity === 'ack'){
+
+    }
   }
 
   function gatherTransferSetupParameters() {

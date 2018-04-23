@@ -1,6 +1,6 @@
 var growApp = angular.module('growApp');
 
-growApp.service('DataTxHelper', function(){
+growApp.service('DataTxHelper', ['$cordovaBluetoothLE', function ($cordovaBluetoothLE){
     this.byteArrayToDecimal = function(byteArray) {
         var bitString = byteArrayToBitString(byteArray);
         return binToDec(bitString);
@@ -15,6 +15,10 @@ growApp.service('DataTxHelper', function(){
     this.encode8Bit = function(value) {
         var u8 = new Uint8Array([value]);
         return window.bluetoothle.bytesToEncodedString(u8);
+    }
+
+    this.oneByteEncodedStrToDec = function(encodedString) {
+        return parseInt($cordovaBluetoothLE.bytesToHex($cordovaBluetoothLE.encodedStringToBytes(encodedString)), 16);
     }
     
     function decToByteString(dec) {
@@ -37,5 +41,4 @@ growApp.service('DataTxHelper', function(){
     function binToDec(bitString) {
         return parseInt(bitString, 2);
     }
-    
-});
+}]);
