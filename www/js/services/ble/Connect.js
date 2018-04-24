@@ -28,10 +28,11 @@ growApp.service('Connect', ['$q', '$cordovaBluetoothLE', '$rootScope', '$log', f
             $log.log("Connect Error : " + JSON.stringify(obj));
             $cordovaBluetoothLE.close(params).then(function (obj) { //Best practice is to close on connection error
                 $log.log("Close Success : " + JSON.stringify(obj)); 
+                q.reject(obj);
             }, function (obj) {
                 $log.log("Close Error : " + JSON.stringify(obj));
+                q.reject(obj);
             });
-            q.reject();
         },
         function (obj) {
             $log.log("Connect Success : " + JSON.stringify(obj));

@@ -1,6 +1,6 @@
 var growApp = angular.module('growApp');
 
-growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', function ($cordovaBluetoothLE, $log) {
+growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', 'DataTxHelper', function ($cordovaBluetoothLE, $log, DataTxHelper) {
     this.transformPackets = function (packetQueue){
         var group = [];
         group.push(
@@ -15,7 +15,7 @@ growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', function ($cordovaB
             })
         );
         _.sortBy(group, function(packet){return packet.key}) //ensures ascending order req of spec
-        $log.log("Group: "+ JSON.stringify(group));
+        // $log.log("Group: "+ JSON.stringify(group));
         return group;
     }
 
@@ -26,5 +26,19 @@ growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', function ($cordovaB
             }
         }
         return 'nack';
+    }
+
+    this.getFileSize = function(headerFrame){
+        return parseInt(hexArrayToHexStr(headerFrame.value), 16);
+    }
+
+    function hexArrayToHexStr(hexArray){
+        var hexStr = "";
+        for(var i=0; i<hexArray.length; i++){
+            $log.log(hexArray[i]);
+            hexStr += hexArray[i].substring(2);            
+        }
+        $log.log(hexStr);
+        return hexStr;
     }
 }]);

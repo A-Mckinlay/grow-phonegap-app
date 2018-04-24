@@ -16,9 +16,14 @@ growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Re
     }).then(function () {
       $log.log("Begin transfer protocol...");
       return transferData();
-    }).then(function(){
+    }).then(function(file){
+      $log.log(file);
       $log.log("close connection...");
       close();
+    }, function(){
+      $log.log("Transfer Failed.");
+    }).then(null, function(obj){
+      $log.log("in main loop: " + JSON.stringify(obj));
     });
   }
 
@@ -56,49 +61,88 @@ growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Re
 
     var packetQueue = [];
     var file = [];
-    errorCount = 0;
-
+    var errorCount = 0;
+    var groupCount = 0;
+    var numPacketsExpected;
     $log.log("subscribing...")
 
     Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txStatus).then(null, null, function (peripheralState) {
       $log.log("Peripheral State Notification:" + JSON.stringify(peripheralState));
-      if (peripheralState.value && peripheralStates[DataTxHelper.oneByteEncodedStrToDec(peripheralState.value)] == 'awaitingAck'){
+      var startTransferFrame;
+      var prevstartTransferFrame;
+      if (peripheralState.value && peripheralStates[DataTxHelper.oneByteEncodedStrToDec(peripheralState.value)] == 'awaitingAck') {
         var group = TxPackets.transformPackets(packetQueue);
         var validity = TxPackets.verifyGroup(group);
 
         if(validity === 'ack'){
-          file.concat(group);
+          file = file.concat(group);
           errorCount = 0;
+          groupCount++;
+          if(groupCount == 1){
+            var fileSize = TxPackets.getFileSize(group[0][0]);
+            numPacketsExpected = calculateNumOfPackets(fileSize, group);
+          }
         }else{
+          validity = 'nack';
           errorCount++;
         }
         
         if (errorCount >= 3) {
           validity = 'error';
-        } else if(timeTransferGroup >= 1000){
-          validity = 'error';
         }
 
-        Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, deviceStates.indexOf(validity), 1).then(function(){$log.log(validity + "'d")});
-        if(validity === error){
-          q.reject()
+        Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, deviceStates.indexOf(validity), 1).then(function(){
+          if (validity === 'error') {
+            q.reject({ TransferStatus: validity });
+          }
+          $log.log(validity + "'d")
+        });
+        
+        $log.log("GroupCount: "+ groupCount + " Numpacketsexpected: " + numPacketsExpected);
+
+        if(groupCount == numPacketsExpected){
+          q.resolve({ TransferStatus: ("transfer complete: " + JSON.stringify(file)) });
         }
-        packetQueue = [];
       }
-      Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txBuffer).then(null, null, function(dataPacket){
-        if(dataPacket.status == "subscribed"){
-          Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, 1, 1).then(function () { //1 -> Recieving state
-            $log.log("rxStatus -> ReceivingState")
-          });
-        } else if(dataPacket.status == "subscribedResult"){
-          startTransferFrame = performance.now()
-          packetQueue.push(dataPacket.value);
-          endTransferFrame = performance.now()
-        }
-      });
+      
+      if (groupCount == 0 && !peripheralState.value) { 
+        Subscribe.subscribe(address, uploadService.serviceId, uploadService.characterisitics.txBuffer).then(null, function(){$log.log("unhandled reject")}, function(dataPacket){
+          if(dataPacket.status == "subscribed"){
+            Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, 1, 1).then(function () { //1 -> Recieving state
+              $log.log("rxStatus -> ReceivingState")
+            });
+          } else if(dataPacket.status == "subscribedResult"){
+
+            if(startTransferFrame){
+              prevStartTransferFrame = startTransferFrame
+              startTransferFrame = performance.now();
+            }else{
+              startTransferFrame = performance.now();
+            }  
+            
+            if (prevstartTransferFrame && prevstartTransferFrame - startTransferFrame >= 1000){
+              validity = 'error';
+              Write.writeValueToCharacteristic(address, uploadService.serviceId, uploadService.characterisitics.rxStatus, deviceStates.indexOf(validity), 1).then(function () { 
+                $log.log(validity + "'d") 
+                q.reject({ TransferStatus: validity });
+              });
+            }else{
+              packetQueue.push(dataPacket.value);
+            }
+          }
+        });
+      }
     });
 
     return q.promise;
+  }
+
+  function calculateNumOfPackets(fileSize, group){
+    var framesInGroup = group.length;
+    fileSize = fileSize - (18 * framesInGroup); //For the first packet as one frame is the header frame. 18 is the number of payload bytes in one frame. 
+    var numOfPackets = Math.ceil((fileSize/2304)) //calculate the number of packets required by the given file size. 2304 is the number of payload bytes in one full packet.
+    $log.log("numOfPackets: " + numOfPackets);
+    return numOfPackets;
   }
 
   function transferResponse(validity, errorCount){
