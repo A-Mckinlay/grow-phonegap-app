@@ -10,7 +10,7 @@ growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', 'DataTxHelper', fun
                 key = key.reverse();
                 key = key[0] + key[1].substring(2);
                 key = parseInt(key, 16);
-                var value = _.slice(hexBytes, 2).reverse();
+                var value = encodedStr//_.slice(hexBytes, 2).reverse();
                 return {key, value};
             })
         );
@@ -29,7 +29,10 @@ growApp.service('TxPackets', ['$cordovaBluetoothLE', '$log', 'DataTxHelper', fun
     }
 
     this.getFileSize = function(headerFrame){
-        return parseInt(hexArrayToHexStr(headerFrame.value), 16);
+        var encodedStr = headerFrame.value;
+        var hexBytes = $cordovaBluetoothLE.bytesToHex($cordovaBluetoothLE.encodedStringToBytes(encodedStr)).split(" ");
+        var payload = _.slice(hexBytes, 2).reverse();
+        return parseInt(hexArrayToHexStr(payload), 16);
     }
 
     function hexArrayToHexStr(hexArray){
