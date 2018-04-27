@@ -28,6 +28,7 @@
   <script type="text/javascript" src="cordova.js"></script>
   <script src="js/growApp.js"></script>
   <script src="./js/services/DataTxHelper.js"></script>
+  <script src="./js/services/DBCommunication.js"></script>
   <script src="./js/services/TxPackets.js"></script>
   <script src="./js/services/ble/Connect.js"></script>
   <script src="./js/services/ble/InitializeCentral.js"></script>
@@ -44,7 +45,9 @@
       <ons-list-item modifier="longdivider" tappable ng-repeat="device in devices" onclick="connect(device)">{{ device.name }}</ons-list-item>
     </ons-list> -->
 
-        <button id="startScanBtn" ripple modifier="large" ng-click="begin()" >Start Scan</button>
+        <button id="startScanBtn" ng-click="begin()" >Start Scan</button>
+
+        <button id="dbtestbtn" ng-click="writeHistoryToDb()">Test DB</button>
 
     <!-- <ons-tabbar>
       <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />

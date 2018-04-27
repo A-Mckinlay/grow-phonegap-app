@@ -1,10 +1,10 @@
 var growApp = angular.module('growApp');
 
-growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$cordovaSQLite', '$log', '$q', function (TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $cordovaSQLite, $log, $q) {
+growApp.controller('router', ['DBCommunication', 'TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$log', '$q', function (DBCommunication, TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $log, $q) {
 
-  var db = $cordovaSQLite.openDB({ name: "my.db", location: 'default' });
   var address = "90:03:B7:C9:D9:C7"; //this should be fetched from the DB dependant on which device the user has chosen to connect to.
   $rootScope.devices = {};
+  var b64File = "testdataforthedbinsert";
 
   $scope.begin = function () {  //Main life cycle of connect and download process.
     Scanning.scan().then(function(obj){
@@ -17,20 +17,27 @@ growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Re
       $log.log("Begin transfer protocol...");
       return transferData();
     }).then(function(file){
-      $log.log("file: " + file);
-      var array = [];
-      array.push(
+      var b64Array = [];
+      b64Array.push(
         _.map(file, function(group){
           return _.map(group, function(kvObj){
-            return kvObj.value;
+            if(kvObj.key === 0){
+              return
+            }else{
+              return kvObj.value.substring(0, kvObj.value.length-1);  //return base64 value without trailing '=' TODO: confirm -1 or -2
+            }
           });
         })
       );
-      $log.log("file: " + array.join("\r\n"));
+      b64File = b64Array.join("") + '=';
+      b64File = b64File.replace(/,/g, "");
+      $log.log("file: " + b64File);
       $log.log("close connection...");
-      close();
+      return close();
     }, function(){
       $log.log("Transfer Failed.");
+    }).then(function(){
+      return writeHistoryToDb();
     }).then(null, function(obj){
       $log.log("in main loop: " + JSON.stringify(obj));
     });
@@ -80,18 +87,20 @@ growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Re
   }
 
   function close() {
+    var q = $q.defer();
+
     var params = { address: address };
 
     $log.log("Close : " + JSON.stringify(params));
 
     $cordovaBluetoothLE.close(params).then(function (obj) {
       $log.log("Close Success : " + JSON.stringify(obj));
+      q.resolve();
     }, function (obj) {
       $log.log("Close Error : " + JSON.stringify(obj));
+      q.reject({CloseError : "close operation failed."});
     });
-
-    // var device = $scope.devices[address];
-    // device.services = {};
+    return q.promise;
   };
 
   function transferData() {
@@ -195,6 +204,10 @@ growApp.controller('router', ['TxPackets', 'Subscribe', 'Scanning', 'Write', 'Re
     var numOfPackets = Math.ceil((fileSize/2304)) //calculate the number of packets required by the given file size. 2304 is the number of payload bytes in one full packet.
     $log.log("numOfPackets: " + numOfPackets);
     return numOfPackets;
+  }
+
+  $scope.writeHistoryToDb = function(){
+    DBCommunication.testDB(address, b64File);
   }
 }]);
 
