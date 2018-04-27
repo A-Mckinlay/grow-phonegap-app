@@ -30,6 +30,7 @@
   <script src="./js/services/DataTxHelper.js"></script>
   <script src="./js/services/DBCommunication.js"></script>
   <script src="./js/services/TxPackets.js"></script>
+  <script src="./js/services/ConversionApi.js"></script>
   <script src="./js/services/ble/Connect.js"></script>
   <script src="./js/services/ble/InitializeCentral.js"></script>
   <script src="./js/services/ble/Read.js"></script>
@@ -52,6 +53,8 @@
         <button id="dbtestselect" ng-click="getHistoryFile()">Select history file</button>
 
         <button id="droptable" ng-click="dropTable()">Drop Table</button>
+
+        <button id="checkNetwork" ng-click="checkNetwork()">Check Network</button>
 
     <!-- <ons-tabbar>
       <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />

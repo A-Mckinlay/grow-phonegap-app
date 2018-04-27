@@ -1,6 +1,6 @@
 var growApp = angular.module('growApp');
 
-growApp.controller('router', ['DBCommunication', 'TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$log', '$q', function (DBCommunication, TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $log, $q) {
+growApp.controller('router', ['ConversionApi', 'DBCommunication', 'TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$log', '$q', function (ConversionApi, DBCommunication, TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $log, $q) {
 
   var address = "90:03:B7:C9:D9:C7"; //this should be fetched from the DB dependant on which device the user has chosen to connect to.
   $rootScope.devices = {};
@@ -216,6 +216,10 @@ growApp.controller('router', ['DBCommunication', 'TxPackets', 'Subscribe', 'Scan
 
   $scope.dropTable = function(){
     DBCommunication.dropTable();
+  }
+
+  $scope.checkNetwork = function(){
+    ConversionApi.checkConnection();
   }
 }]);
 

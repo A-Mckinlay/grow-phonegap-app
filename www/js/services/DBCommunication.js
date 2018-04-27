@@ -45,6 +45,7 @@ growApp.service('DBCommunication', ['$cordovaSQLite', '$log', function ($cordova
     //====End reigon HistoryFileTable====
 
     //====Begin reigon HistoryTable====
+    
     //====End reigon HistoryTable====
     function getPeripheralSystemID(address){
         byteArray = address.split(':'); //example address -> 90:03:B7:C9:D9:C7
