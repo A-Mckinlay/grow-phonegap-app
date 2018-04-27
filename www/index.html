@@ -47,7 +47,11 @@
 
         <button id="startScanBtn" ng-click="begin()" >Start Scan</button>
 
-        <button id="dbtestbtn" ng-click="writeHistoryToDb()">Test DB</button>
+        <button id="dbtestbtn" ng-click="setHistoryFile()">Test DB</button>
+
+        <button id="dbtestselect" ng-click="getHistoryFile()">Select history file</button>
+
+        <button id="droptable" ng-click="dropTable()">Drop Table</button>
 
     <!-- <ons-tabbar>
       <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />

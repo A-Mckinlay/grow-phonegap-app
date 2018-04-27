@@ -37,7 +37,7 @@ growApp.controller('router', ['DBCommunication', 'TxPackets', 'Subscribe', 'Scan
     }, function(){
       $log.log("Transfer Failed.");
     }).then(function(){
-      return writeHistoryToDb();
+      return setHistoryFile();
     }).then(null, function(obj){
       $log.log("in main loop: " + JSON.stringify(obj));
     });
@@ -206,8 +206,16 @@ growApp.controller('router', ['DBCommunication', 'TxPackets', 'Subscribe', 'Scan
     return numOfPackets;
   }
 
-  $scope.writeHistoryToDb = function(){
-    DBCommunication.testDB(address, b64File);
+  function setHistoryFile() {
+    DBCommunication.setHistoryFile(address, b64File);
+  }
+
+  $scope.getHistoryFile = function() {
+    DBCommunication.getHistoryFile(address);
+  }
+
+  $scope.dropTable = function(){
+    DBCommunication.dropTable();
   }
 }]);
 
