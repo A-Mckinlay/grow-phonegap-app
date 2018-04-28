@@ -1,4 +1,4 @@
-var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'ngCordova']);
+var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'ngCordova', 'cordovaHTTP']);
 
 // configure our routes
 growApp.config(function ($routeProvider) {

@@ -1,20 +1,28 @@
-growApp.service('NetworkStatus', ['$log', function ($log) {
+growApp.service('NetworkStatus', ['$log', '$rootScope', function ($log, $rootScope) {
+    $rootScope.networkOnilne = false;
+    document.addEventListener("offline", onOffline, false);
+    document.addEventListener("online", onOnline, false);
+    
+    $log.log(navigator);
+
+    function onOffline(){
+        $rootScope.networkOnilne = false;
+    }
+
+    function onOnline(){
+        $rootScope.networkOnilne = true;
+    }
+
     function checkConnection() {
         var networkState = navigator.connection.type;
-
         if(networkState != Connection.NONE){
-            networkOnilne = true;
+            return true;
         } else {
-            networkOnilne = false;
+            return false;
         }
     }
 
     this.getNetworkStatus = function() {
-        checkConnection();
-        if(networkOnilne){
-            return 'online';
-        } else {
-            return 'offline';
-        }
+        return checkConnection();
     }
 }]);
