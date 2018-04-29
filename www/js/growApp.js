@@ -1,17 +1,24 @@
-var growApp = angular.module('growApp', ['ngRoute', 'ngCordovaBluetoothLE', 'ngCordova', 'cordovaHTTP']);
+'use strict';
+// Declare app level module which depends on views, and components
+var growApp = angular.module('growApp', [
+    'ngRoute',
+    'ngCordova',
+    'ngTouch',
+    'ngCordovaBluetoothLE',
+    'cordovaHTTP',
+    'chart.js',
+    'growApp.main',
+    'growApp.graph',
+    'growApp.services',
+]);
 
-// configure our routes
 growApp.config(function ($routeProvider) {
-    $routeProvider
-        // route for the home page
-        .when('/', {
-            templateUrl: 'templates/home.html',
-            controller: 'homeController'
-        });
+    $routeProvider.otherwise({redirectTo: '/main'})
 });
 
-document.addEventListener("deviceready", function () { //manually bootstrap angular as need to wait on Cordova deviceready event before doing so.
-    // retrieve the DOM element that had the ng-app attribute
-    var domElement = document.getElementById("growApp");
-    angular.bootstrap(domElement, ["growApp"]);
-}, false);
+var onDeviceReady = function () {
+    console.log("onDeviceReady");
+    angular.bootstrap(document, ['growApp']);
+};
+
+document.addEventListener('deviceready', onDeviceReady);

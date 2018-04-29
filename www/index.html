@@ -6,7 +6,7 @@
   <meta name="msapplication-tap-highlight" content="no" />
   <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width" />
   <!-- This is a wide open CSP declaration. To lock this down for production, see below. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'">  
+  <!-- <meta http-equiv="Content-Security-Policy" content="default-src *; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'">   -->
   <!-- Good default declaration:
   * gap: is required only on iOS (when using UIWebView) and is needed for JS->native communication
   * https://ssl.gstatic.com is required only on Android and is needed for TalkBack to function properly
@@ -16,50 +16,32 @@
   * Create your own at http://cspisawesome.com
   -->
   <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: 'unsafe-inline' https://ssl.gstatic.com; style-src 'self' 'unsafe-inline'; media-src *" /> -->
-  <script src="./js/Libs/angular.js"></script>
+  
+  <script src="js/Libs/angular.js"></script>
 
-  <script src="./js/Libs/bower_components/ng-cordova-bluetoothle/ng-cordova-bluetoothle.js"></script><!--On final deploy change all to minified versions-->
-  <script src="./js/Libs/promise.js"></script>
-  <script src="./js/Libs/angular-route/angular-route.js"></script>
-  <script src="./js/Libs/jquery-3.2.1.js"></script>
-  <script src="./js/Libs/ng-cordova.js"></script>
-  <script src="./js/Libs/lodash.core.js"></script>
+  <script src="js/Libs/bower_components/ng-cordova-bluetoothle/ng-cordova-bluetoothle.js"></script><!--If deploying to a production env change to minified versions-->
+  <script src="js/Libs/promise.js"></script>
+  <script src="js/Libs/angular-route/angular-route.js"></script>
+  <script src="js/Libs/angular-touch.min.js"></script>
+  <script src="js/Libs/jquery-3.2.1.js"></script>
+  <script src="js/Libs/ng-cordova.js"></script>
+  <script src="js/Libs/lodash.core.js"></script>
+  <script src="js/Libs/papaparse.min.js"></script>
+  <script src="js/Libs/Chart.min.js"></script>
+  <script src="js/Libs/angular-chart.min.js"></script>
+
   <link rel="stylesheet" type="text/css" href="css/index.css" /> <!--Remove-->
+
   <script type="text/javascript" src="cordova.js"></script>
+
   <script src="js/growApp.js"></script>
-  <script src="./js/services/DataTxHelper.js"></script>
-  <script src="./js/services/DBCommunication.js"></script>
-  <script src="./js/services/Upload.js"></script>
-  <script src="./js/services/TxPackets.js"></script>
-  <script src="./js/services/NetworkStatus.js"></script>
-  <script src="./js/services/ble/Connect.js"></script>
-  <script src="./js/services/ble/InitializeCentral.js"></script>
-  <script src="./js/services/ble/Read.js"></script>
-  <script src="./js/services/ble/Write.js"></script>
-  <script src="./js/services/ble/Scanning.js"></script>
-  <script src="./js/services/ble/Subscribe.js"></script>
-  <script type="text/javascript" src="js/controllers/router.js"></script>
+  <script type="text/javascript" src="js/services.js"></script>
+  <script type="text/javascript" src="js/views/main/main.js"></script>
+  <script type="text/javascript" src="js/views/graph/graph.js"></script>
 </head>
 
-<body ng-controller='router' id="growApp">
-    <!-- <ons-list modifier="inset">
-      <ons-list-header>Available devices</ons-list-header>
-      <ons-list-item modifier="longdivider" tappable ng-repeat="device in devices" onclick="connect(device)">{{ device.name }}</ons-list-item>
-    </ons-list> -->
-
-        <button id="startScanBtn" ng-click="begin()" >Start Scan</button>
-
-        <button id="dbtestbtn" ng-click="setHistoryFile()">Test DB</button>
-
-        <button id="dbtestselect" ng-click="getHistoryFile()">Select history file</button>
-
-        <button id="droptable" ng-click="dropTable()">Drop Table</button>
-
-        <button id="checkNetwork" ng-click="checkNetwork()">Check Network</button>
-
-        <button id="triggerUpload" ng-click="upload()">Upload</button>
-
-    <!-- <ons-tabbar>
-      <ons-tab href="#home" label="Tab 1" icon="ion-home, material:md-home" badge="7" active />
-    </ons-tabbar>-->
+<body>
+  
+  <div ng-view class="page-view"></div>
+  
 </body>
