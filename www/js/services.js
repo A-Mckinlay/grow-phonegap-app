@@ -4,7 +4,11 @@
 
 var growAppServices = angular.module('growApp.services', ['ngCordova']);
 
-growAppServices.service('Upload', ['$log', '$rootScope', 'DBCommunication', 'NetworkStatus', function ($log, $rootScope, DBCommunication, NetworkStatus) {
+growAppServices.value("addressService", {
+	address: "90:03:B7:C9:D9:C7" //this should be fetched from the DB dependant on which device the user has chosen. Part of multiple devices epic.
+})
+
+growAppServices.service('Upload', ['$log', '$rootScope', 'DBCommunication', 'NetworkStatus', '$q', function ($log, $rootScope, DBCommunication, NetworkStatus, $q) {
 
 	var networkOnline = function () {
 		return NetworkStatus.getNetworkStatus();
@@ -17,8 +21,12 @@ growAppServices.service('Upload', ['$log', '$rootScope', 'DBCommunication', 'Net
 				if (status.isSent) {
 					$log.log("Your latest download of the history file has already been converted");
 				} else {
-					DBCommunication.getHistoryFile(address).then(function (b64HistoryFile) {
-						// $log.log("data to be sent to api: " + b64HistoryFile);
+					$q.all([
+						DBCommunication.getHistoryFile(address),
+						DBCommunication.getStartupTime(address)
+					]).then(function (reqValues) {
+						var b64HistoryFile = reqValues[0];
+						var startupTime = reqValues[1];
 
 						var xhr = new XMLHttpRequest();
 
@@ -30,10 +38,11 @@ growAppServices.service('Upload', ['$log', '$rootScope', 'DBCommunication', 'Net
 							}
 						});
 
-						xhr.open("POST", "http://us-central1-grow-app-202121.cloudfunctions.net/growappfunc", true);
+						xhr.open("POST", "http://us-central1-grow-app-202121.cloudfunctions.net/function-1", true);
 						xhr.setRequestHeader("content-type", "text/plain")
 
-						xhr.send(b64HistoryFile);
+						var reqObj = { startupTime: startupTime, b64History: b64HistoryFile }
+						xhr.send(JSON.stringify(reqObj)); //Trying to stay close to CORS.
 					});
 				}
 			});
@@ -173,10 +182,10 @@ growAppServices.service('DBCommunication', ['$cordovaSQLite', '$log', '$q', func
 	var db = $cordovaSQLite.openDB({ name: "growApp.db", location: 'default' });
 
 	//====Begin reigon HistoryFileTable====
-	this.setHistoryFile = function (address, b64HistoryFile) {
+	this.setHistoryFile = function (address, b64HistoryFile, startupTime) {
 		db.sqlBatch([
-			'CREATE TABLE IF NOT EXISTS HistoryFileTable (systemID TEXT NOT NULL PRIMARY KEY, historyFile TEXT NOT NULL, sentToAPI INT NOT NULL)',
-			['INSERT OR REPLACE INTO HistoryFileTable VALUES (?,?,?)', [getPeripheralSystemID(address), b64HistoryFile, 0]],
+			'CREATE TABLE IF NOT EXISTS HistoryFileTable (systemID TEXT NOT NULL PRIMARY KEY, historyFile TEXT NOT NULL, startupTime INT NOT NULL,sentToAPI INT NOT NULL)',
+			['INSERT OR REPLACE INTO HistoryFileTable VALUES (?,?,?,?)', [getPeripheralSystemID(address), b64HistoryFile, startupTime, 0]],
 		], function () {
 			$log.log('Populated database OK');
 			return true;
@@ -191,6 +200,19 @@ growAppServices.service('DBCommunication', ['$cordovaSQLite', '$log', '$q', func
 
 		db.executeSql('SELECT historyFile FROM HistoryFileTable WHERE systemID = (?)', [getPeripheralSystemID(address)], function (rs) {
 			var result = rs.rows.item(0).historyFile
+			q.resolve(result);
+		}, function (error) {
+			$log.log('SELECT SQL statement ERROR: ' + error.message);
+			q.reject(error.message);
+		});
+		return q.promise;
+	}
+
+	this.getStartupTime = function (address) {
+		var q = $q.defer();
+
+		db.executeSql('SELECT startupTime FROM HistoryFileTable WHERE systemID = (?)', [getPeripheralSystemID(address)], function (rs) {
+			var result = rs.rows.item(0).startupTime
 			q.resolve(result);
 		}, function (error) {
 			$log.log('SELECT SQL statement ERROR: ' + error.message);
@@ -263,11 +285,6 @@ growAppServices.service('DBCommunication', ['$cordovaSQLite', '$log', '$q', func
 		return q.promise;
 	}
 
-	this.parseCSVToTable = function (csvFile) {
-		csvFile = "Date, Air temperature (°C), Light (mol/m²/d), Soil EC (?), Soil temperature (°C), Soil VWC (%), Battery level (%)\n493879310, 31.43507778, 16.189278328625733, 128, 764.8818887534999, 100, 0\n493892310, 1543.236506793, 0.5940954853904259, 49320, 1541.0100648815, 100, 0\n493905310, 2319.4594251299995, 1045.0182039025603, 41015, 572.8394311105, 100, 100"
-		var csvToJson = window.Papa.parse(csvFile, { header: true, trimHeader: true });
-		$log.log(JSON.stringify(csvToJson));
-	}
 	//====End reigon CsvFileTable====
 
 	function getPeripheralSystemID(address) {

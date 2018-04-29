@@ -1,21 +1,28 @@
 'use strict';
-var growAppMain = angular.module('growApp.graph', [
+var growAppGraph = angular.module('growApp.graph', [
     'ngRoute',
     'ngCordova',
     'ngTouch',
+    'chart.js',
     'growApp.services',
 ]);
 
-growAppMain.config(['$routeProvider', function ($routeProvider) {
+growAppGraph.config(['$routeProvider', function ($routeProvider) {
     $routeProvider.when('/graph', {
         templateUrl: 'js/views/graph/graph.html',
         controller: 'graphCtrl'
     });
 }]);
 
-var growApp = angular.module('growApp');
+growAppGraph.controller('graphCtrl', ['$scope', '$log', 'DBCommunication', 'ChartJs', 'addressService', function ($scope, $log, DBCommunication, ChartJs, addressService) {
 
-growApp.controller('graphCtrl', ['$scope', '$log', 'DBCommunication', 'chart.js', function ($scope, $log, DBCommunication, chartjs) {
+    $scope.transformCsv = function(){
+        DBCommunication.getCsvFile(addressService.address).then(function(histCsv){
+            var histJson = window.Papa.parse(histCsv, { header: true, trimHeader: true });
+            $log.log(histJson);
+            
+        })
+    }
 
     $scope.labels = ["January", "February", "March", "April", "May", "June", "July"];
     $scope.series = ['Series A', 'Series B'];
@@ -24,7 +31,7 @@ growApp.controller('graphCtrl', ['$scope', '$log', 'DBCommunication', 'chart.js'
         [28, 48, 40, 19, 86, 27, 90]
     ];
     $scope.onClick = function (points, evt) {
-        console.log(points, evt);
+        $log.log(points, evt);
     };
     $scope.datasetOverride = [{ yAxisID: 'y-axis-1' }, { yAxisID: 'y-axis-2' }];
     $scope.options = {

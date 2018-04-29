@@ -15,15 +15,20 @@ growAppMain.config(['$routeProvider', function ($routeProvider) {
     });
 }]);
 
-growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication', 'TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$log', '$q', function (Upload, NetworkStatus, DBCommunication, TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $log, $q) {
+growAppMain.controller('mainCtrl', ['addressService', 'Upload', 'NetworkStatus', 'DBCommunication', 'TxPackets', 'Subscribe', 'Scanning', 'Write', 'Read', 'Connect', 'DataTxHelper', '$scope', '$rootScope', '$cordovaBluetoothLE', '$log', '$q', '$location', function (addressService, Upload, NetworkStatus, DBCommunication, TxPackets, Subscribe, Scanning, Write, Read, Connect, DataTxHelper, $scope, $rootScope, $cordovaBluetoothLE, $log, $q, $location) {
     $log.log("mainCtrl");
     $scope.clickPrevious = function () {
         window.history.back();
     };
 
-    var address = "90:03:B7:C9:D9:C7"; //this should be fetched from the DB dependant on which device the user has chosen to connect to.
+    $scope.goToGraph = function(){
+        $location.path('/graph')
+    }
+
+    var address = addressService.address;
+    var flowerPowerStartupTime = 0;
     $rootScope.devices = {};
-    var b64File = "testdataforthedbinsert";
+    var b64File = "";
 
     $scope.begin = function () {  //Main life cycle of connect and download process.
         Scanning.scan().then(function (obj) {
@@ -32,7 +37,8 @@ growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication'
         }).then(function () {
             $log.log("Gather transfer steup parameters...");
             return gatherTransferSetupParameters();
-        }).then(function () {
+        }).then(function (startupTime) {
+            flowerPowerStartupTime = startupTime;
             $log.log("Begin transfer protocol...");
             return transferData();
         }).then(function (file) {
@@ -66,6 +72,10 @@ growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication'
     function gatherTransferSetupParameters() {
         var q = $q.defer();
 
+        var clockService = {
+            id: "39E1FD00-84A8-11E2-AFBA-0002A5D5C51B",
+            characterisitic: "39E1FD01-84A8-11E2-AFBA-0002A5D5C51B"
+        };
         var historyService = "39E1FC00-84A8-11E2-AFBA-0002A5D5C51B";
         var historyCharacUUIDs = {
             nbEntries: "39E1FC01-84A8-11E2-AFBA-0002A5D5C51B",
@@ -78,17 +88,20 @@ growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication'
 
         $q.all([
             Read.readCharacteristic(address, historyService, historyCharacUUIDs.nbEntries, "nbEntries", "U16"),
-            Read.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32")
+            Read.readCharacteristic(address, historyService, historyCharacUUIDs.lastEntryIndex, "lastEntryIndex", "U32"),
+            Read.readCharacteristic(address, clockService.id, clockService.characterisitic, "clock", "U32")
         ]).then(
             function (params) {
-                var characterisitics = {};
+                var retrievedValues = {};
                 params.forEach(function (element) {
                     var elementKey = Object.keys(element)[0];
-                    characterisitics[elementKey] = element[elementKey];
+                    retrievedValues[elementKey] = element[elementKey];
                 });
-                var firstEntryIndex = calculateFirstEntryIndex(characterisitics.lastEntryIndex, characterisitics.nbEntries);
+                var startupTime = calculateStartupTime(retrievedValues.clock);
+                $log.log("flowerPowerStartupTime: " + flowerPowerStartupTime + " clock val: " + retrievedValues.clock);
+                var firstEntryIndex = calculateFirstEntryIndex(retrievedValues.lastEntryIndex, retrievedValues.nbEntries);
                 Write.writeValueToCharacteristic(address, historyService, historyCharacUUIDs.transferStartIndex, firstEntryIndex, 4).then(function () {
-                    q.resolve();
+                    q.resolve(startupTime);
                 }, function () {
                     $log.log("err failed to write transfer start index")
                     q.reject();
@@ -104,6 +117,10 @@ growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication'
 
     function calculateFirstEntryIndex(lastEntryIndex, nbEntries) {
         return lastEntryIndex - nbEntries + 1;;
+    }
+
+    function calculateStartupTime(clock) {
+        return (Math.round(new Date().getTime() / 1000) - clock);
     }
 
     function close() {
@@ -227,7 +244,7 @@ growAppMain.controller('mainCtrl', ['Upload', 'NetworkStatus', 'DBCommunication'
     }
 
     function setHistoryFile() {
-        DBCommunication.setHistoryFile(address, b64File);
+        DBCommunication.setHistoryFile(address, b64File, flowerPowerStartupTime);
     }
 
     $scope.getHistoryFile = function () {

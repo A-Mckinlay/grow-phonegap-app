@@ -12,9 +12,10 @@ var growApp = angular.module('growApp', [
     'growApp.services',
 ]);
 
-growApp.config(function ($routeProvider) {
+growApp.config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
+    $locationProvider.hashPrefix('!');
     $routeProvider.otherwise({redirectTo: '/main'})
-});
+}]);
 
 var onDeviceReady = function () {
     console.log("onDeviceReady");
