@@ -42,4 +42,10 @@ The grow sensor application aims to replicate and extend beyond the fuctionality
 - Check network will return true or fale dependant on whether you are connected to a network or not.
 - The Parse csv does nothing.
 - Get csv file returns the csv file stored in the DB
-- View Graph takes you to the graph page. 
+- View Graph takes you to the graph page.
+
+# How to create an deploy debug apk to a device
+
+- In the the level of your project directory run ``phonegap build android --debug --device``
+- Using the adb.exe install the apk created by PhoneGap by running ``adb install .\platforms\android\build\outputs\apk\android-debug.apk``
+- If you do not have adb in you environment variables you should be able to find the execuatable in the Android SDK or download it from the internet.
