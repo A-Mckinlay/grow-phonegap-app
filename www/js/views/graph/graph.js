@@ -14,14 +14,25 @@ growAppGraph.config(['$routeProvider', function ($routeProvider) {
     });
 }]);
 
-growAppGraph.controller('graphCtrl', ['$scope', '$log', 'DBCommunication', 'ChartJs', 'addressService', function ($scope, $log, DBCommunication, ChartJs, addressService) {
+growAppGraph.controller('graphCtrl', ['$location', '$scope', '$log', 'DBCommunication', 'ChartJs', 'addressService', function ($location, $scope, $log, DBCommunication, ChartJs, addressService) {
+
+    $scope.goToMain = function () {
+        $location.path('/main')
+    }
 
     $scope.transformCsv = function(){
         DBCommunication.getCsvFile(addressService.address).then(function(histCsv){
             var histJson = window.Papa.parse(histCsv, { header: true, trimHeader: true });
             $log.log(histJson);
-            
-        })
+            var dataArray = [];
+            dataArray.push(_.forEach(histJson.data, function(obj){
+                return {
+                    x: obj.Date,
+                    y: parseFloat(obj[" Light (mol/m²/d)"])
+                }
+            }))
+            $log.log(dataArray);
+        });
     }
 
     $scope.labels = ["January", "February", "March", "April", "May", "June", "July"];
