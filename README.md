@@ -44,7 +44,9 @@ The grow sensor application aims to replicate and extend beyond the fuctionality
 - Get csv file returns the csv file stored in the DB
 - View Graph takes you to the graph page.
 
-# How to create an deploy debug apk to a device
+---
+
+# How to Create and Deploy a Debug APK to a Device
 
 - In the the level of your project directory run ``phonegap build android --debug --device``
 - Using the adb.exe install the apk created by PhoneGap by running ``adb install .\platforms\android\build\outputs\apk\android-debug.apk``
