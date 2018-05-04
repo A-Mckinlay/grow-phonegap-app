@@ -20,47 +20,54 @@ growAppGraph.controller('graphCtrl', ['$location', '$scope', '$log', 'DBCommunic
         $location.path('/main')
     }
 
-    $scope.transformCsv = function(){
-        DBCommunication.getCsvFile(addressService.address).then(function(histCsv){
-            var histJson = window.Papa.parse(histCsv, { header: true, trimHeader: true });
-            $log.log(histJson);
-            var dataArray = [];
-            dataArray.push(_.forEach(histJson.data, function(obj){
-                return {
-                    x: obj.Date,
-                    y: parseFloat(obj[" Light (mol/m²/d)"])
-                }
-            }))
-            $log.log(dataArray);
+    DBCommunication.getCsvFile(addressService.address).then(function(histCsv){  //Get data, if it exists, on page load.
+        var histJson = window.Papa.parse(histCsv, { header: true, trimHeader: true });
+        var dataArray = _.forEach(histJson.data, function(obj){
+            return {
+                x: obj.Date,
+                y: parseFloat(obj[" Light (mol/m²/d)"])
+            };
         });
+        $log.log(dataArray);
+        var averagedData = averageData(dataArray);
+        var labels = extractLabels(averagedData);
+        $log.log("labels: " + JSON.stringify(labels));
+        $scope.labels = labels;
+        $scope.series = [];
+        $scope.data = averagedData;
+        $scope.onClick = function (points, evt) {
+            console.log(points, evt);
+        };
+        $scope.options = {};
+    });
+
+    function extractLabels(averagedData) {
+        var labels = _.map(averagedData, function(dataPoint){
+            var date = new Date(dataPoint.x * 1000);
+            return date.getDate().toString() + "/" + (date.getMonth() + 1).toString()
+        });
+        return labels;
     }
 
-    $scope.labels = ["January", "February", "March", "April", "May", "June", "July"];
-    $scope.series = ['Series A', 'Series B'];
-    $scope.data = [
-        [65, 59, 80, 81, 56, 55, 40],
-        [28, 48, 40, 19, 86, 27, 90]
-    ];
-    $scope.onClick = function (points, evt) {
-        $log.log(points, evt);
-    };
-    $scope.datasetOverride = [{ yAxisID: 'y-axis-1' }, { yAxisID: 'y-axis-2' }];
-    $scope.options = {
-        scales: {
-            yAxes: [
-                {
-                    id: 'y-axis-1',
-                    type: 'linear',
-                    display: true,
-                    position: 'left'
-                },
-                {
-                    id: 'y-axis-2',
-                    type: 'linear',
-                    display: true,
-                    position: 'right'
+    function averageData(data){
+        $log.log("extract labels: " + JSON.stringify(data))
+        var rangeAverages = [];
+        var i, j, temparray, chunk = 50;
+        for (i = 0, j = data.length; i < j; i += chunk) {
+            temparray = data.slice(i, i + chunk);
+
+            var avg = _.meanBy(temparray, function(dataPoint){
+                $log.log("light: " + parseFloat(dataPoint[" Light (mol/m²/d)"]));
+                if (parseFloat(dataPoint[" Light (mol/m²/d)"]) == Infinity){
+                    return 0;
+                } else{
+                    return parseFloat(dataPoint[" Light (mol/m²/d)"]);
                 }
-            ]
+            });
+            var firstDate = temparray[0].Date;
+            rangeAverages.push({ x: firstDate, y: Math.round(avg) });
         }
-    };
+        $log.log("range averages: " + JSON.stringify(rangeAverages));
+        return rangeAverages;
+    }
 }]);
